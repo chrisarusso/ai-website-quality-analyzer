@@ -243,6 +243,26 @@ The MVP focuses on 10 high-impact check categories:
 
 **Recommended:** Local dev → Fly.io for demo/production
 
+## Current Implementation Notes (2025-12-22)
+
+- Stack used: Python 3.11+, Typer CLI, FastAPI + Uvicorn, SQLite, httpx + BeautifulSoup crawler, Jinja templates, Pydantic + pydantic-settings. No front-end build step.
+- Rationale (verbose):
+  - Typer CLI: quickest way to offer a single entrypoint to crawl/analyze/store without UI overhead.
+  - FastAPI + Jinja: gives a minimal dashboard and API surface with built-in validation/OpenAPI; avoids React/Vue complexity for MVP demos.
+  - SQLite: zero setup, file-based persistence suited for single-user demo runs; easy to ship with data/agent.db.
+  - httpx + BeautifulSoup crawler (SimpleCrawler): lightweight, dependency-minimal baseline; good for static pages and quick iteration.
+  - Modular analyzers: SEO and Content stubs in place to prove the pipeline; designed to swap/extend with axe-core, Lighthouse, LLM, and CMS/GDPR checks.
+  - Templates: server-rendered HTML for instant viewing of scans; printable if/when we add PDF.
+  - Config via env: predictable `.env` keys (API keys, DB path, rate limits).
+- Not yet integrated: Playwright, axe-core, Lighthouse, Crawl4AI, CommonCrawl. These are planned next to replace/augment the SimpleCrawler and expand checks.
+- Operational script: `start.sh` creates/uses `.venv`, installs deps editable, and launches the dashboard on `http://127.0.0.1:${PORT:-8001}`.
+- Latest scans: stored in `data/agent.db`; scan_id=2 is a 200-page crawl of savaslabs.com using the current minimal analyzers.
+
+## Running Status (rolling log)
+
+- 2025-12-22: Baseline skeleton live; CLI + dashboard running locally. Scans against savaslabs.com completed with SimpleCrawler + minimal analyzers. `start.sh` and `remote_run.sh` added for easy local/remote runs.
+- Pending: Integrate Playwright (with axe-core), Lighthouse, LLM-based spelling/grammar, and optional Crawl4AI/CommonCrawl fallback. Add richer issue detail in reports (screenshots, HTML snippets) and PDF export.
+
 ## Project Structure
 
 ```

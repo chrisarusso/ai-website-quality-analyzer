@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Website Quality Agent</h1>
+<p>Recent scans</p>
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Root URL</th>
+      <th>Created</th>
+      <th>Pages</th>
+      <th>Issues</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for scan in scans %}
+    <tr>
+      <td><a href="/scans/{{ scan['id'] }}">{{ scan['id'] }}</a></td>
+      <td>{{ scan['root_url'] }}</td>
+      <td>{{ scan['created_at'] }}</td>
+      <td>{{ scan['page_count'] }}</td>
+      <td>{{ scan['issue_count'] }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5">No scans yet</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+

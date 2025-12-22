@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="/">← Back</a>
+<h1>Scan {{ scan_id }}</h1>
+<p><strong>Root URL:</strong> {{ summary.root_url }}<br/>
+<strong>Created:</strong> {{ summary.created_at }}<br/>
+<strong>Pages:</strong> {{ summary.page_count }}<br/>
+<strong>Issues:</strong> {{ summary.issue_count }}</p>
+
+<h2>Issues by severity</h2>
+<ul>
+{% for sev, count in summary.issues_by_severity.items() %}
+  <li><span class="badge {{ sev }}">{{ sev }}</span> {{ count }}</li>
+{% else %}
+  <li>No issues recorded</li>
+{% endfor %}
+</ul>
+
+<h2>Pages</h2>
+<table>
+  <thead><tr><th>URL</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for page in pages %}
+    <tr>
+      <td><a href="{{ page.url }}" target="_blank" rel="noreferrer">{{ page.url }}</a></td>
+      <td>{{ page.status_code }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Issues</h2>
+<table>
+  <thead><tr><th>Category</th><th>Severity</th><th>Message</th><th>Location</th><th>Details</th></tr></thead>
+  <tbody>
+  {% for issue in issues %}
+    <tr>
+      <td>{{ issue.category }}</td>
+      <td><span class="badge {{ issue.severity }}">{{ issue.severity }}</span></td>
+      <td>{{ issue.message }}</td>
+      <td>{{ issue.location }}</td>
+      <td>
+        {% if issue.meta and issue.meta.get('snippets') %}
+          <code>{{ issue.meta['snippets'][0] }}</code>
+        {% elif issue.meta and issue.meta.get('preview') %}
+          <div>Preview: <code>{{ issue.meta['preview'] }}</code></div>
+          <div>Word count: {{ issue.meta.get('word_count') }}</div>
+        {% elif issue.meta and issue.meta.get('word_count') %}
+          <div>Word count: {{ issue.meta.get('word_count') }}</div>
+        {% else %}
+          -
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5">No issues recorded</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+
