@@ -1,7 +1,73 @@
 # Website Quality Agent
 
-**Status:** Planning
-**Last Updated:** 2025-12-21
+**Status:** MVP Built
+**Last Updated:** 2025-12-22
+
+## Implementation Status
+
+### What's Built ✅
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| **Project structure** | ✅ Complete | Modular `src/website_agent/` layout |
+| **Playwright crawler** | ✅ Complete | Anti-bot stealth, rate limiting, respects robots.txt |
+| **Simple crawler fallback** | ✅ Complete | Requests + BeautifulSoup for simpler sites |
+| **SEO analyzer** | ✅ Complete | Title, meta, H1, canonical, Open Graph, structured data |
+| **Content analyzer (LLM)** | ✅ Complete | Spelling, grammar, formatting via GPT-4o-mini |
+| **Accessibility analyzer** | ✅ Complete | Alt text, lang, labels, ARIA, heading hierarchy |
+| **Link analyzer** | ✅ Complete | Thin content, JavaScript links detection |
+| **Performance analyzer** | ✅ Basic | Page size, resource count, load time |
+| **Mobile analyzer** | ✅ Complete | Viewport, touch targets, zoom settings |
+| **Compliance analyzer** | ✅ Complete | Privacy policy, cookie consent, tracking detection |
+| **CMS analyzer** | ✅ Complete | Drupal/WordPress detection and version checks |
+| **SQLite storage** | ✅ Complete | Stores scans, pages, issues |
+| **Report aggregator** | ✅ Complete | Scores by category, logarithmic curve, all issues view |
+| **FastAPI web service** | ✅ Complete | REST API for scans, results, reports |
+| **CLI** | ✅ Complete | `website-agent scan`, `serve`, `status`, `report` |
+| **HTML reports** | ✅ Complete | Collapsible categories, all issues, clickable URLs |
+| **Tests** | ✅ Complete | 41 tests passing |
+| **Remote execution** | ✅ Complete | `run-remote.sh` for overnight scans |
+
+### What's Not Yet Built ⏳
+
+| Component | Priority | Notes |
+|-----------|----------|-------|
+| **axe-core integration** | High | Full WCAG compliance via Playwright injection |
+| **Lighthouse integration** | High | Core Web Vitals (LCP, CLS, TBT) |
+| **PDF report generation** | Medium | WeasyPrint or Playwright print |
+| **Broken link checker** | Medium | HEAD requests to verify external links |
+| **Web UI dashboard** | Medium | Beyond basic HTML report |
+| **Scheduled monitoring** | Low | Cron-based recurring scans |
+| **Delta reports** | Low | Compare scans over time |
+| **Freemium gating** | Low | Blur/limit results for free tier |
+
+### Recent Changes
+
+**2025-12-22:**
+- Built complete MVP from scratch
+- All 10 check categories implemented
+- Scoring algorithm: logarithmic curve normalized by page count
+- HTML reports show all issues (not just top 10) with collapsible sections
+- Added `start.sh`, `scan-overnight.sh`, `run-remote.sh` scripts
+- First successful scan: savaslabs.com (49 pages, 1260 issues, 7 min)
+
+### Test Results
+
+Latest scan of savaslabs.com:
+- **Pages:** 49
+- **Total issues:** 1,260
+- **Overall score:** 8.3/100 (many accessibility issues)
+- **By category:**
+  - SEO: 51/100 (177 issues)
+  - Grammar: 80/100 (25 issues)
+  - Formatting: 92/100 (15 issues)
+  - Accessibility: 0/100 (626 issues - needs alt text)
+  - Compliance: 49/100 (145 issues)
+  - Performance: 56/100 (120 issues)
+  - Mobile: 76/100 (54 issues)
+  - Security: 60/100 (98 issues)
+
+---
 
 ## Overview
 
@@ -552,11 +618,29 @@ After MVP, expand to cover additional quality checks organized by category:
 
 ## Next Steps
 
-1. [ ] Set up new project structure in `website-quality-agent/`
-2. [ ] Port and refactor existing `website_analyzer.py` into modular structure
-3. [ ] Add axe-core integration for accessibility
-4. [ ] Add Lighthouse CLI integration for performance
-5. [ ] Build simple FastAPI web interface
-6. [ ] Create report templates (HTML dashboard + PDF)
-7. [ ] Test on 5 client sites, document results
-8. [ ] Deploy to Fly.io for demo access
+### Completed ✅
+1. [x] Set up new project structure in `website-quality-agent/`
+2. [x] Port and refactor existing `website_analyzer.py` into modular structure
+3. [x] Build simple FastAPI web interface
+4. [x] Create HTML report templates
+
+### Up Next
+5. [ ] Add axe-core integration for full WCAG accessibility testing
+6. [ ] Add Lighthouse CLI integration for Core Web Vitals
+7. [ ] Add broken link checker (HEAD requests to external URLs)
+8. [ ] Create PDF report generation
+9. [ ] Test on 5 client sites, document results
+10. [ ] Deploy to Fly.io for demo access
+
+### Quick Start
+
+```bash
+# Start the web app
+./start.sh
+
+# Run a scan
+uv run website-agent scan https://example.com --max-pages 50
+
+# Run overnight on remote server
+./run-remote.sh https://example.com
+```
