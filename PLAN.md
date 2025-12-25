@@ -294,6 +294,35 @@ Extend the scanner to not just detect issues but propose and apply fixes automat
    - Each CONTENT_FIX is individual (different content items)
    - User can choose: "Fix all" or "Fix one at a time"
 
+6. **User Context/Instructions for Fixes**
+   - Each issue in the report has an optional text input for user notes
+   - User can provide context the LLM wouldn't know
+   - Notes are stored in the GitHub issue body
+   - Agent reads notes before attempting fix
+
+   **Example Use Case:**
+   ```
+   Issue: [HIGH] 403 Forbidden error on link to /team/john-smith
+
+   User Note: "This is a former colleague. Their page was intentionally
+   disabled when they left the company. The fix should update the team
+   card template to conditionally show/hide the link based on whether
+   the person is still active at Savas. Check the 'is_active' field
+   in the team member content type."
+   ```
+
+   The agent would then:
+   1. Create GitHub issue with user's context included
+   2. Understand this isn't a broken link to fix, but a template logic change
+   3. Look for the team card template and `is_active` field
+   4. Create PR with conditional link logic
+
+   **UI Implementation:**
+   - Expandable "Add fix instructions" textarea below each issue
+   - Placeholder text: "Optional: Add context or instructions for the fix agent..."
+   - Character limit: 1000 chars
+   - Stored with issue when "Fix Selected Issues" clicked
+
 ### Issue-to-Fix Mapping
 
 | Issue Type | Fix Type | Method | Confidence |

@@ -10,9 +10,11 @@ Usage:
 
 import argparse
 import asyncio
+import re
 import sys
 import uuid
 from datetime import datetime
+from urllib.parse import urlparse
 
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -86,6 +88,41 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
+class ScanError(Exception):
+    """Exception raised when scan encounters a critical error."""
+    pass
+
+
+def url_to_filename_slug(url: str) -> str:
+    """Convert URL to a clean filename-safe slug.
+
+    Examples:
+        https://savaslabs.com -> savaslabs
+        https://americanpackaging.com -> americanpackaging
+        https://www.example.com/path -> example
+    """
+    parsed = urlparse(url)
+    domain = parsed.netloc or parsed.path
+
+    # Remove www. prefix
+    if domain.startswith("www."):
+        domain = domain[4:]
+
+    # Get just the main domain name (before any dots for TLD)
+    parts = domain.split(".")
+    if len(parts) >= 2:
+        # Take the main name (e.g., "savaslabs" from "savaslabs.com")
+        name = parts[0]
+    else:
+        name = domain
+
+    # Clean up any remaining non-alphanumeric chars
+    name = re.sub(r"[^a-zA-Z0-9]", "", name)
+
+    # Truncate if too long
+    return name[:20].lower() if name else "site"
+
+
 async def run_scan(url: str, max_pages: int) -> ScanResult:
     """Run a website scan."""
     scan_id = str(uuid.uuid4())[:8]
@@ -125,6 +162,45 @@ async def run_scan(url: str, max_pages: int) -> ScanResult:
 
         crawl_results = await crawler.crawl(progress_callback=update_progress)
         progress.update(task, description=f"Crawled {len(crawl_results)} pages")
+
+        # ===== EARLY ERROR DETECTION =====
+        # Check if the homepage (first/primary page) failed - this is critical
+        if crawl_results:
+            first_result = crawl_results[0]
+            if first_result.error or first_result.status_code == 0:
+                error_msg = first_result.error or "Unknown error - page returned no content"
+                console.print(f"\n[red bold]CRITICAL ERROR: Failed to load homepage[/red bold]")
+                console.print(f"[red]URL: {url}[/red]")
+                console.print(f"[red]Error: {error_msg}[/red]")
+                console.print(f"\n[yellow]This usually means:[/yellow]")
+                console.print("  - The site is blocking automated requests")
+                console.print("  - The site is behind a firewall or requires authentication")
+                console.print("  - The site is down or unreachable")
+                console.print("  - There's a network/DNS issue")
+                store.update_scan_status(scan_id, "failed", error=f"Homepage failed: {error_msg}")
+                raise ScanError(f"Failed to load homepage: {error_msg}")
+
+        # Check if we got very few pages (potential blocking)
+        successful_pages = [r for r in crawl_results if r.status_code == 200]
+        failed_pages = [r for r in crawl_results if r.status_code == 0 or r.error]
+
+        if len(crawl_results) > 0:
+            failure_rate = len(failed_pages) / len(crawl_results)
+            if failure_rate > 0.5 and len(failed_pages) > 3:
+                console.print(f"\n[yellow]WARNING: High failure rate detected[/yellow]")
+                console.print(f"[yellow]  {len(failed_pages)}/{len(crawl_results)} pages failed to load ({failure_rate:.0%})[/yellow]")
+                console.print(f"[yellow]  The site may be rate-limiting or blocking requests[/yellow]\n")
+
+        if len(successful_pages) == 0:
+            error_msg = "No pages could be loaded successfully"
+            console.print(f"\n[red bold]CRITICAL ERROR: {error_msg}[/red bold]")
+            store.update_scan_status(scan_id, "failed", error=error_msg)
+            raise ScanError(error_msg)
+
+        console.print(f"\n[green]Successfully crawled {len(successful_pages)} pages[/green]")
+        if failed_pages:
+            console.print(f"[yellow]  ({len(failed_pages)} pages failed to load)[/yellow]")
+        # ===== END EARLY ERROR DETECTION =====
 
         # Analysis phase
         progress.update(task, description="Analyzing pages...")
@@ -219,7 +295,10 @@ def cmd_scan(args):
         elif args.output == "html":
             aggregator = ReportAggregator()
             html = aggregator.generate_html_report(scan, scan.summary)
-            filename = f"report_{scan.id}.html"
+            # Generate filename with URL slug and timestamp
+            url_slug = url_to_filename_slug(args.url)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+            filename = f"report_{url_slug}_{timestamp}_{scan.id}.html"
             with open(filename, "w") as f:
                 f.write(html)
             console.print(f"\n[green]HTML report saved to: {filename}[/green]")

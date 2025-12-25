@@ -229,13 +229,40 @@ class PlaywrightCrawler:
 
         return links
 
-    async def crawl_page(self, url: str) -> CrawlResult:
-        """Crawl a single page and return the result."""
+    async def crawl_page(self, url: str, retry_count: int = 0) -> CrawlResult:
+        """Crawl a single page and return the result.
+
+        Uses a fallback strategy for page loading:
+        1. First try 'domcontentloaded' (faster, more reliable)
+        2. If that fails, retry with longer timeout
+        3. Max 2 retries with exponential backoff
+        """
+        max_retries = 2
         page = await self._context.new_page()
 
         try:
             start_time = datetime.utcnow()
-            response = await page.goto(url, timeout=self.timeout, wait_until="networkidle")
+
+            # Use domcontentloaded instead of networkidle - more reliable for
+            # Cloudflare/CDN sites that have persistent connections
+            wait_strategy = "domcontentloaded"
+            current_timeout = self.timeout * (1 + retry_count)  # Increase timeout on retry
+
+            try:
+                response = await page.goto(url, timeout=current_timeout, wait_until=wait_strategy)
+            except Exception as nav_error:
+                # If domcontentloaded fails, try with just 'commit' (earliest possible)
+                if retry_count == 0:
+                    logger.warning(f"Navigation failed with {wait_strategy}, trying 'commit': {url}")
+                    try:
+                        response = await page.goto(url, timeout=current_timeout * 2, wait_until="commit")
+                        # Give extra time for content to load
+                        await asyncio.sleep(2)
+                    except Exception:
+                        raise nav_error  # Re-raise original error
+                else:
+                    raise
+
             load_time_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
 
             # Get the final URL after any redirects
@@ -257,14 +284,27 @@ class PlaywrightCrawler:
                 final_url=final_url_normalized if final_url_normalized != url else None,
             )
         except Exception as e:
-            logger.error(f"Error crawling {url}: {e}")
+            error_msg = str(e)
+            logger.error(f"Error crawling {url} (attempt {retry_count + 1}/{max_retries + 1}): {error_msg}")
+
+            # Close this page before retry
+            await page.close()
+
+            # Retry logic with exponential backoff
+            if retry_count < max_retries:
+                wait_time = (retry_count + 1) * 5  # 5s, 10s
+                logger.info(f"Retrying {url} in {wait_time}s...")
+                await asyncio.sleep(wait_time)
+                return await self.crawl_page(url, retry_count + 1)
+
             return CrawlResult(
                 url=url,
                 status_code=0,
-                error=str(e),
+                error=error_msg,
             )
         finally:
-            await page.close()
+            if not page.is_closed():
+                await page.close()
 
     async def crawl(self, progress_callback=None) -> list[CrawlResult]:
         """Crawl the website starting from base_url.
