@@ -1,1 +1,4 @@
 .env
+
+# compiled bytecode files
+.pyc

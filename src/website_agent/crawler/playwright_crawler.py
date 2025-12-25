@@ -29,8 +29,11 @@ class CrawlResult:
         text: str = "",
         load_time_ms: float = 0.0,
         error: Optional[str] = None,
+        final_url: Optional[str] = None,
     ):
-        self.url = url
+        self.url = url  # Original requested URL
+        self.final_url = final_url or url  # URL after redirects
+        self.was_redirect = final_url is not None and final_url != url
         self.status_code = status_code
         self.html = html
         self.text = text
@@ -235,6 +238,10 @@ class PlaywrightCrawler:
             response = await page.goto(url, timeout=self.timeout, wait_until="networkidle")
             load_time_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
 
+            # Get the final URL after any redirects
+            final_url = page.url
+            final_url_normalized = self._normalize_url(final_url)
+
             status_code = response.status if response else 0
             html = await page.content()
 
@@ -247,6 +254,7 @@ class PlaywrightCrawler:
                 html=html,
                 text=text or "",
                 load_time_ms=load_time_ms,
+                final_url=final_url_normalized if final_url_normalized != url else None,
             )
         except Exception as e:
             logger.error(f"Error crawling {url}: {e}")
@@ -269,6 +277,10 @@ class PlaywrightCrawler:
         """
         await self._init_browser()
 
+        # Track final URLs to avoid analyzing redirected duplicates
+        final_urls_seen: set[str] = set()
+        redirect_count = 0
+
         try:
             # Fetch robots.txt first
             await self._fetch_robots_txt()
@@ -287,12 +299,30 @@ class PlaywrightCrawler:
                 logger.info(f"Crawling ({len(self.visited)}/{self.max_pages}): {url}")
 
                 result = await self.crawl_page(url)
+
+                # Check if this is a redirect to an already-analyzed page
+                if result.was_redirect and result.final_url in final_urls_seen:
+                    logger.info(f"Skipping duplicate (redirect): {url} -> {result.final_url}")
+                    redirect_count += 1
+                    # Don't add to results - it's a duplicate
+                    continue
+
+                # Track the final URL
+                final_urls_seen.add(result.final_url)
+
+                # Also add original URL pattern to visited to avoid re-crawling
+                # (e.g., if we see node/123, don't queue it again)
+                if result.was_redirect:
+                    self.visited.add(result.final_url)
+                    redirect_count += 1
+                    logger.info(f"Redirect: {url} -> {result.final_url}")
+
                 self.results.append(result)
 
                 # Extract and queue new links
                 if result.html and result.status_code == 200:
                     soup = result.soup
-                    new_links = self._extract_links(soup, url)
+                    new_links = self._extract_links(soup, result.final_url)
                     for link in new_links:
                         if link not in self.visited and link not in self.to_visit:
                             self.to_visit.append(link)
@@ -300,6 +330,9 @@ class PlaywrightCrawler:
                 # Randomized delay between requests
                 delay = self.delay + random.uniform(0.5, 1.5)
                 await asyncio.sleep(delay)
+
+            if redirect_count > 0:
+                logger.info(f"Total redirects detected: {redirect_count}")
 
             return self.results
 

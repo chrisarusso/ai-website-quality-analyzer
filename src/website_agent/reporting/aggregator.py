@@ -3,8 +3,10 @@
 Combines issues from all pages, calculates scores, and generates summaries.
 """
 
+import hashlib
 import html as html_module
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Optional
 
 from ..config import SEVERITY_WEIGHTS
@@ -19,8 +21,19 @@ from ..models import (
 )
 
 
+@dataclass
+class SiteWideIssue:
+    """An issue that appears on most pages (site-wide)."""
+    issue: Issue  # Representative issue
+    page_count: int  # Number of pages this appears on
+    pages: list[str]  # List of page URLs (for reference)
+
+
 class ReportAggregator:
     """Aggregates scan results into summary reports."""
+
+    # Threshold for considering an issue "site-wide" (appears on this % of pages)
+    SITE_WIDE_THRESHOLD = 0.9  # 90%
 
     def __init__(self, max_score: float = 100.0):
         """Initialize aggregator.
@@ -29,6 +42,64 @@ class ReportAggregator:
             max_score: Maximum possible score (default 100)
         """
         self.max_score = max_score
+
+    def _get_issue_hash(self, issue: Issue) -> str:
+        """Create a hash to identify similar issues across pages.
+
+        Uses title and category to group issues. Does not use URL or element
+        since those vary per page.
+        """
+        key = f"{issue.category}:{issue.title}"
+        return hashlib.md5(key.encode()).hexdigest()[:12]
+
+    def _identify_site_wide_issues(
+        self, all_issues: list[Issue], total_pages: int
+    ) -> tuple[list[SiteWideIssue], list[Issue]]:
+        """Separate site-wide issues from per-page issues.
+
+        Args:
+            all_issues: All issues from all pages
+            total_pages: Total number of pages analyzed
+
+        Returns:
+            Tuple of (site_wide_issues, per_page_issues)
+        """
+        if total_pages < 2:
+            return [], all_issues
+
+        # Group issues by hash
+        issues_by_hash: dict[str, list[Issue]] = defaultdict(list)
+        for issue in all_issues:
+            issue_hash = self._get_issue_hash(issue)
+            issues_by_hash[issue_hash].append(issue)
+
+        site_wide_issues = []
+        per_page_issues = []
+        threshold = total_pages * self.SITE_WIDE_THRESHOLD
+
+        for issue_hash, issues in issues_by_hash.items():
+            # Count unique pages this issue appears on
+            unique_pages = list(set(i.url for i in issues))
+            page_count = len(unique_pages)
+
+            if page_count >= threshold:
+                # This is a site-wide issue - use first occurrence as representative
+                site_wide_issues.append(SiteWideIssue(
+                    issue=issues[0],
+                    page_count=page_count,
+                    pages=unique_pages,
+                ))
+            else:
+                # These are per-page issues
+                per_page_issues.extend(issues)
+
+        # Sort site-wide issues by severity then title
+        severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+        site_wide_issues.sort(
+            key=lambda sw: (severity_order.get(sw.issue.severity, 4), sw.issue.title)
+        )
+
+        return site_wide_issues, per_page_issues
 
     def aggregate(self, scan: ScanResult) -> ScanSummary:
         """Aggregate all page results into a summary.
@@ -267,6 +338,10 @@ class ReportAggregator:
         for page in scan.pages:
             all_issues.extend(page.issues)
 
+        # Separate site-wide issues from per-page issues
+        total_pages = len([p for p in scan.pages if p.status_code == 200])
+        site_wide_issues, per_page_issues = self._identify_site_wide_issues(all_issues, total_pages)
+
         # Build pages list HTML
         pages_list_html = ""
         for i, page in enumerate(sorted(scan.pages, key=lambda p: p.url), 1):
@@ -282,9 +357,51 @@ class ReportAggregator:
             </div>
             '''
 
-        # Group issues by category
+        # Build site-wide issues section
+        site_wide_html = ""
+        if site_wide_issues:
+            site_wide_items = ""
+            for sw in site_wide_issues:
+                issue = sw.issue
+                color = severity_colors.get(issue.severity, "#6c757d")
+                code_html = ""
+                if issue.element:
+                    escaped_element = html_module.escape(issue.element)
+                    code_html = f'''
+                    <div class="code-context">
+                        <pre><code>{escaped_element}</code></pre>
+                    </div>
+                    '''
+                site_wide_items += f"""
+                <div class="issue severity-{issue.severity}" data-severity="{issue.severity}" style="border-left: 4px solid {color}; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <strong style="color: {color};">[{issue.severity.upper()}]</strong> {issue.title}
+                            <span style="background: #6c757d; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; margin-left: 10px;">Appears on {sw.page_count} pages</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 6px;">
+                        <small style="color: #666;">Category: {issue.category.upper()}</small>
+                    </div>
+                    {code_html}
+                    <div style="margin-top: 8px;">
+                        <em style="color: #555; font-size: 0.9em;">💡 {issue.recommendation}</em>
+                    </div>
+                </div>
+                """
+            site_wide_html = f"""
+            <div class="site-wide-section" style="margin-bottom: 30px;">
+                <h2 style="color: #6c757d; border-bottom: 2px solid #6c757d; padding-bottom: 8px;">
+                    🌐 Site-Wide Issues ({len(site_wide_issues)} issues affecting 90%+ of pages)
+                </h2>
+                <p style="color: #666; margin-bottom: 15px;">These issues appear on nearly every page. Fix them once at the template/theme level for maximum impact.</p>
+                {site_wide_items}
+            </div>
+            """
+
+        # Group remaining per-page issues by category
         issues_by_category: dict[str, list[Issue]] = defaultdict(list)
-        for issue in all_issues:
+        for issue in per_page_issues:
             issues_by_category[issue.category].append(issue)
 
         # Sort issues within each category by severity
@@ -294,11 +411,11 @@ class ReportAggregator:
                 key=lambda i: (severity_order.get(i.severity, 4), i.url, i.title)
             )
 
-        # Build category sections HTML
+        # Build category sections HTML (only per-page issues, site-wide shown separately)
         category_sections_html = ""
         for cat in summary.category_scores:
-            if cat.issue_count > 0:
-                cat_issues = issues_by_category.get(cat.category, [])
+            cat_issues = issues_by_category.get(cat.category, [])
+            if cat_issues:  # Only show categories that have per-page issues
                 issues_html = ""
                 for issue in cat_issues:
                     color = severity_colors.get(issue.severity, "#6c757d")
@@ -343,7 +460,7 @@ class ReportAggregator:
                 <div class="category-section" id="cat-{cat.category}">
                     <h3 onclick="toggleCategory('{cat.category}')" style="cursor: pointer; user-select: none;">
                         <span class="toggle-icon" id="icon-{cat.category}">▼</span>
-                        {cat.category.upper()} ({cat.issue_count} issues - Score: {cat.score}/100)
+                        {cat.category.upper()} ({len(cat_issues)} issues - Score: {cat.score}/100)
                     </h3>
                     <div class="category-issues" id="issues-{cat.category}">
                         {issues_html}
@@ -390,7 +507,7 @@ class ReportAggregator:
                 tr:hover {{ background: #f8f9fa; }}
                 .category-section {{ margin-bottom: 5px; }}
                 .category-issues {{ background: #fff; border: 1px solid #e9ecef; border-top: none; padding: 10px; border-radius: 0 0 5px 5px; }}
-                .category-issues.hidden {{ display: none; }}
+                .category-issues.hidden, .hidden {{ display: none; }}
                 .issue a {{ color: #0066cc; text-decoration: none; }}
                 .issue a:hover {{ text-decoration: underline; }}
                 .nav-link {{ color: #0066cc; cursor: pointer; }}
@@ -508,7 +625,9 @@ class ReportAggregator:
                 {pages_list_html}
             </div>
 
-            <h2>All Issues by Category</h2>
+            {site_wide_html}
+
+            <h2>Per-Page Issues by Category</h2>
             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                 <strong>Filter by Severity:</strong>
                 <label style="margin-left: 15px; cursor: pointer;">

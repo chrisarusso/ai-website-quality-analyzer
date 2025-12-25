@@ -6,7 +6,8 @@
       "Bash(curl:*)",
       "Bash(uv run:*)",
       "Bash(open:*)",
-      "Bash(ssh:*)"
+      "Bash(ssh:*)",
+      "Bash(scp:*)"
     ]
   }
 }
