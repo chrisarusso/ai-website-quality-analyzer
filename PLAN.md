@@ -1,7 +1,26 @@
 # Website Quality Agent
 
-**Status:** MVP Built
-**Last Updated:** 2025-12-22
+**Status:** MVP Built + Remote Execution
+**Last Updated:** 2025-12-24
+
+## Current Status / Where We Left Off
+
+**Scan Running:** Full savaslabs.com scan running on AWS (ubuntu@3.142.219.101)
+- Started: 2025-12-24 ~6:32 PM PT
+- Slack notifications enabled (will notify on complete/fail)
+- Estimated completion: 10-15 minutes
+
+**To check progress:**
+```bash
+ssh -i ~/.ssh/AWS-created-nov-27-2025.pem ubuntu@3.142.219.101 'tail -f /home/ubuntu/website-quality-agent/scan-20251224_183202.log'
+```
+
+**To fetch report when done:**
+```bash
+scp -i ~/.ssh/AWS-created-nov-27-2025.pem ubuntu@3.142.219.101:/home/ubuntu/website-quality-agent/report_*.html .
+```
+
+---
 
 ## Implementation Status
 
@@ -12,21 +31,22 @@
 | **Project structure** | ✅ Complete | Modular `src/website_agent/` layout |
 | **Playwright crawler** | ✅ Complete | Anti-bot stealth, rate limiting, respects robots.txt |
 | **Simple crawler fallback** | ✅ Complete | Requests + BeautifulSoup for simpler sites |
-| **SEO analyzer** | ✅ Complete | Title, meta, H1, canonical, Open Graph, structured data |
-| **Content analyzer (LLM)** | ✅ Complete | Spelling, grammar, formatting via GPT-4o-mini |
-| **Accessibility analyzer** | ✅ Complete | Alt text, lang, labels, ARIA, heading hierarchy |
+| **SEO analyzer** | ✅ Complete | Title, meta, H1, canonical, Open Graph, structured data + HTML context |
+| **Content analyzer (LLM)** | ✅ Complete | Spelling, grammar, formatting via GPT-4o-mini (balanced prompt) |
+| **Accessibility analyzer** | ✅ Complete | Alt text, lang, labels, ARIA + surrounding HTML context |
 | **Link analyzer** | ✅ Complete | Thin content, JavaScript links detection |
 | **Performance analyzer** | ✅ Basic | Page size, resource count, load time |
 | **Mobile analyzer** | ✅ Complete | Viewport, touch targets, zoom settings |
 | **Compliance analyzer** | ✅ Complete | Privacy policy, cookie consent, tracking detection |
 | **CMS analyzer** | ✅ Complete | Drupal/WordPress detection and version checks |
 | **SQLite storage** | ✅ Complete | Stores scans, pages, issues |
-| **Report aggregator** | ✅ Complete | Scores by category, logarithmic curve, all issues view |
+| **Report aggregator** | ✅ Complete | Scores, all issues, severity filters, crawled URLs list |
 | **FastAPI web service** | ✅ Complete | REST API for scans, results, reports |
-| **CLI** | ✅ Complete | `website-agent scan`, `serve`, `status`, `report` |
-| **HTML reports** | ✅ Complete | Collapsible categories, all issues, clickable URLs |
+| **CLI** | ✅ Complete | `website-agent scan`, `serve`, `status`, `report`, `--all` flag |
+| **HTML reports** | ✅ Complete | Collapsible categories, severity filters, "Why It Matters" section |
 | **Tests** | ✅ Complete | 41 tests passing |
-| **Remote execution** | ✅ Complete | `run-remote.sh` for overnight scans |
+| **Remote execution** | ✅ Complete | `run-remote.sh` with Slack notifications (start/complete/fail) |
+| **Unlimited crawling** | ✅ Complete | `--all` flag or `--max-pages 0` for no limit |
 
 ### What's Not Yet Built ⏳
 
@@ -41,7 +61,355 @@
 | **Delta reports** | Low | Compare scans over time |
 | **Freemium gating** | Low | Blur/limit results for free tier |
 
+---
+
+## Phase 2: Auto-Fix Agent
+
+**Status:** Planning
+**Target:** POC on savaslabs.com (Drupal + GitHub)
+
+### Overview
+
+Extend the scanner to not just detect issues but propose and apply fixes automatically, with human approval workflow.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Scan Results (Issues)                        │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   Fix Classifier                                 │
+│                                                                 │
+│  Categorizes each issue:                                        │
+│  • CONTENT_FIX - Can fix via CMS API (alt text, spelling, etc) │
+│  • CODE_FIX - Can fix via Git PR (templates, config)           │
+│  • MANUAL_ONLY - Requires human judgment (design decisions)     │
+│  • NOT_FIXABLE - Detection-only (3rd party, external)          │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │
+        ┌─────────────┴─────────────┐
+        ▼                           ▼
+┌───────────────────┐     ┌───────────────────┐
+│  Content Fixer    │     │   Code Fixer      │
+│  (Drupal API)     │     │   (GitHub PRs)    │
+└────────┬──────────┘     └────────┬──────────┘
+         │                         │
+         ▼                         ▼
+┌───────────────────┐     ┌───────────────────┐
+│ Create unpublished│     │  Create PR with:  │
+│ revision with:    │     │  - Diff           │
+│ - Proposed change │     │  - Screenshots    │
+│ - Before/after    │     │  - Issue details  │
+└────────┬──────────┘     └────────┬──────────┘
+         │                         │
+         └──────────┬──────────────┘
+                    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  Approval Queue                                  │
+│                                                                 │
+│  • Web UI showing pending fixes                                 │
+│  • Before/after preview                                         │
+│  • One-click approve/reject per fix                            │
+│  • Batch approve by category                                    │
+│  • Slack notifications for new fixes                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Issue-to-Fix Mapping
+
+| Issue Type | Fix Type | Method | Confidence |
+|------------|----------|--------|------------|
+| Missing alt text (content images) | CONTENT_FIX | Drupal API - update media entity | High (AI generates alt) |
+| Missing alt text (theme images) | CODE_FIX | Git PR - update template | High |
+| Spelling errors | CONTENT_FIX | Drupal API - update node body | High (have suggestion) |
+| Grammar errors | CONTENT_FIX | Drupal API - update node body | Medium (verify suggestion) |
+| Missing meta description | CONTENT_FIX | Drupal API - update node field | Medium (AI generates) |
+| Empty link text | CODE_FIX | Git PR - update template | High |
+| Missing lang attribute | CODE_FIX | Git PR - update html.html.twig | High |
+| Missing H1 | CODE_FIX | Git PR - update page template | Medium |
+| Multiple H1s | CODE_FIX | Git PR - change extra H1→H2 | Medium |
+| Missing canonical | CODE_FIX | Git PR - add metatag | High |
+| Cookie consent missing | MANUAL_ONLY | Needs design/legal decision | N/A |
+| Third-party tracking | MANUAL_ONLY | Business decision | N/A |
+
+### POC Scope (Savas Labs)
+
+#### POC 1: Alt Text Fixer (Highest Impact)
+**Goal:** Auto-generate alt text for images missing it, submit as draft revisions
+
+**Steps:**
+1. From scan, get list of images missing alt text with their URLs
+2. For each image:
+   - Download the image
+   - Use GPT-4o vision to generate descriptive alt text
+   - Find the image in Drupal (via JSON:API query by URL)
+   - Create a revision with the new alt text (unpublished)
+   - Log the proposed change
+3. Notify via Slack: "X images have proposed alt text - review at [URL]"
+
+**Drupal Integration:**
+```bash
+# Get media entities via JSON:API
+GET /jsonapi/media/image?filter[field_media_image.uri][value]=public://...
+
+# Update with new alt text (creates revision)
+PATCH /jsonapi/media/image/{uuid}
+{
+  "data": {
+    "type": "media--image",
+    "id": "{uuid}",
+    "attributes": {
+      "field_media_image": {
+        "alt": "AI-generated alt text here"
+      }
+    }
+  }
+}
+```
+
+**AI Alt Text Generation:**
+```python
+# Use GPT-4o vision
+response = openai.chat.completions.create(
+    model="gpt-4o",
+    messages=[{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "Generate concise, descriptive alt text for this image. Be specific but brief (under 125 chars). Don't start with 'Image of' or 'Picture of'."},
+            {"type": "image_url", "image_url": {"url": image_url}}
+        ]
+    }]
+)
+```
+
+#### POC 2: Spelling/Grammar Fixer
+**Goal:** Apply spelling/grammar fixes to content, submit as draft revisions
+
+**Steps:**
+1. From scan, get spelling/grammar issues with context
+2. For each issue:
+   - Find the node containing this text (search via JSON:API)
+   - Get current body content
+   - Apply the fix (replace misspelled word or grammar issue)
+   - Create revision with fix (unpublished)
+   - Log before/after
+3. Notify via Slack
+
+**Challenge:** Locating exact content in Drupal
+- May need to search across multiple fields (body, summary, custom fields)
+- Need to handle HTML entities and formatting
+
+#### POC 3: Code Template Fixer
+**Goal:** Create GitHub PRs for template-level issues
+
+**Steps:**
+1. Clone Savas Labs repo
+2. For each code-fixable issue:
+   - Identify which template file to modify
+   - Make the change (add lang attr, fix empty link, etc.)
+   - Stage the change
+3. Create a single PR with all template fixes
+4. Include in PR description:
+   - List of issues fixed
+   - Before/after for each
+   - Link to scan report
+
+**Example Fixes:**
+```twig
+{# Before: Missing lang attribute #}
+<html>
+
+{# After #}
+<html lang="en">
+```
+
+```twig
+{# Before: Empty link #}
+<a href="{{ url }}" class="social-icon">
+  <i class="fa fa-twitter"></i>
+</a>
+
+{# After #}
+<a href="{{ url }}" class="social-icon" aria-label="Twitter">
+  <i class="fa fa-twitter" aria-hidden="true"></i>
+</a>
+```
+
+### Approval Workflow
+
+#### Option A: Drupal Content Moderation (Content Fixes)
+- Create revisions in "Draft" or "Needs Review" state
+- Editors review in Drupal admin
+- Approve → publishes the revision
+- Reject → deletes the revision
+
+#### Option B: Custom Approval UI (All Fixes)
+- Web dashboard showing all pending fixes
+- Group by type (alt text, spelling, code)
+- Preview before/after
+- Approve individually or batch
+- On approve: publishes revision OR merges PR
+- On reject: discards fix, optionally adds to ignore list
+
+#### Option C: Slack-Based Approval (Quick POC)
+- Post each fix to Slack with buttons
+- ✅ Approve / ❌ Reject buttons
+- On approve: API call to publish/merge
+- Simple but doesn't scale
+
+### Data Model Extension
+
+```python
+class ProposedFix(BaseModel):
+    """A proposed fix for an issue."""
+    id: str
+    issue_id: str  # Reference to original issue
+    scan_id: str
+    fix_type: Literal["CONTENT_FIX", "CODE_FIX", "MANUAL_ONLY"]
+    status: Literal["pending", "approved", "rejected", "applied"]
+
+    # What to change
+    target_type: str  # "drupal_media", "drupal_node", "git_file"
+    target_id: str    # UUID, node ID, or file path
+    field_name: Optional[str]  # For Drupal: which field
+
+    # The fix
+    original_value: str
+    proposed_value: str
+
+    # Metadata
+    confidence: float  # 0-1, how confident we are in the fix
+    ai_generated: bool  # Was this generated by AI?
+    created_at: datetime
+    reviewed_at: Optional[datetime]
+    reviewed_by: Optional[str]
+
+    # For code fixes
+    pr_url: Optional[str]
+    commit_sha: Optional[str]
+```
+
+### Configuration
+
+```yaml
+# fixer_config.yaml
+drupal:
+  base_url: https://savaslabs.com
+  api_endpoint: /jsonapi
+  auth:
+    type: oauth  # or basic, api_key
+    client_id: ${DRUPAL_CLIENT_ID}
+    client_secret: ${DRUPAL_CLIENT_SECRET}
+
+  # Content moderation states
+  draft_state: draft
+  published_state: published
+
+github:
+  repo: savaslabs/savaslabs.com  # or wherever the theme is
+  base_branch: main
+  pr_prefix: "fix/website-quality-"
+
+  # Labels to add to PRs
+  labels:
+    - automated
+    - website-quality
+
+openai:
+  model: gpt-4o  # For vision/alt text
+  temperature: 0.3
+
+slack:
+  webhook_url: ${SLACK_WEBHOOK_URL}
+  channel: "#website-quality"
+  notify_on:
+    - new_fixes_proposed
+    - fix_approved
+    - fix_rejected
+
+approval:
+  mode: slack  # slack, dashboard, drupal_moderation
+  auto_approve_threshold: 0.95  # Auto-approve if confidence > 95%
+  batch_size: 10  # Max fixes to propose at once
+```
+
+### Implementation Order
+
+1. **Week 1: Alt Text Fixer POC**
+   - [ ] Set up Drupal API authentication
+   - [ ] Image → alt text generation with GPT-4o vision
+   - [ ] Create draft revisions in Drupal
+   - [ ] Basic Slack notification
+   - [ ] Test on 10 images from savaslabs.com
+
+2. **Week 2: Spelling/Grammar Fixer**
+   - [ ] Content search in Drupal (find node by text)
+   - [ ] Text replacement logic
+   - [ ] Revision creation
+   - [ ] Expand Slack notifications
+
+3. **Week 3: Code Template Fixer**
+   - [ ] GitHub API integration
+   - [ ] Template file identification
+   - [ ] Change generation for common issues
+   - [ ] PR creation workflow
+
+4. **Week 4: Approval Dashboard**
+   - [ ] Simple web UI for reviewing fixes
+   - [ ] Before/after preview
+   - [ ] Approve/reject actions
+   - [ ] Integration with Drupal/GitHub
+
+### Success Metrics
+
+- **Alt text coverage:** 0% → 90%+ of images have alt text
+- **Time to fix:** Days → Minutes (from detection to proposed fix)
+- **Approval rate:** Target 80%+ of AI suggestions approved
+- **False positive rate:** <5% of suggestions rejected as incorrect
+
+### Security Considerations
+
+- Drupal API credentials stored securely (not in code)
+- GitHub token with minimal required permissions
+- All changes create revisions/PRs (never direct publish)
+- Audit log of all proposed and applied changes
+- Rate limiting to avoid overwhelming CMS
+
+### Future Enhancements
+
+- **Learning from rejections:** If a fix is rejected, learn why and improve
+- **Bulk operations:** "Fix all spelling errors" with one approval
+- **Scheduled runs:** Weekly scan + fix proposal
+- **Multi-site support:** Same agent for multiple Drupal sites
+- **Custom fix rules:** Define site-specific fixes (e.g., brand name spelling)
+
 ### Recent Changes
+
+**2025-12-24:**
+- **Report improvements:**
+  - Added HTML context for all issues (shows actual code to fix)
+  - Added severity filter checkboxes (Critical/High/Medium/Low)
+  - Added "Why These Issues Matter" educational section
+  - Added collapsible list of all crawled URLs with status/issue counts
+  - Issues now show surrounding HTML for accessibility problems
+- **Content analyzer rebalanced:**
+  - Updated LLM prompt to reduce false positives (was flagging correct words)
+  - Grammar issues now include original text + suggested fix
+  - Spelling detection works but sites tested are clean
+- **Remote execution with Slack:**
+  - `run-remote.sh` now sends Slack notifications on start/complete/fail
+  - Configured for AWS EC2 (ubuntu@3.142.219.101)
+  - Scan survives disconnection (runs via nohup)
+  - Report includes pages crawled, issues found, score, duration
+- **Unlimited page crawling:**
+  - Added `--all` flag to crawl all pages
+  - `--max-pages 0` also means unlimited
+- **Ran scans on:**
+  - americanpackaging.com (74 pages, 811 issues)
+  - savaslabs.com (running now on AWS)
 
 **2025-12-22:**
 - Built complete MVP from scratch
@@ -635,12 +1003,30 @@ After MVP, expand to cover additional quality checks organized by category:
 ### Quick Start
 
 ```bash
-# Start the web app
-./start.sh
+# Run a local scan (quick, limited pages)
+uv run website-agent scan https://example.com --max-pages 20
 
-# Run a scan
-uv run website-agent scan https://example.com --max-pages 50
+# Run a local scan (all pages, takes longer)
+uv run website-agent scan https://example.com --all --output html
 
-# Run overnight on remote server
+# Run on remote AWS server (survives disconnection, Slack notifications)
 ./run-remote.sh https://example.com
+
+# Check remote scan progress
+ssh -i ~/.ssh/AWS-created-nov-27-2025.pem ubuntu@3.142.219.101 'tail -f /home/ubuntu/website-quality-agent/scan-*.log'
+
+# Fetch report from remote
+scp -i ~/.ssh/AWS-created-nov-27-2025.pem ubuntu@3.142.219.101:/home/ubuntu/website-quality-agent/report_*.html .
+
+# Start the local web API
+./start.sh
 ```
+
+### Environment Config (.env)
+
+Key settings configured:
+- `OPENAI_API_KEY` - For LLM content analysis
+- `REMOTE_HOST=3.142.219.101` - AWS EC2 instance
+- `REMOTE_USER=ubuntu`
+- `REMOTE_SSH_KEY=~/.ssh/AWS-created-nov-27-2025.pem`
+- `SLACK_WEBHOOK_URL` - For scan notifications

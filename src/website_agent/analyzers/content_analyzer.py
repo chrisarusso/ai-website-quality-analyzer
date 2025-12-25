@@ -79,47 +79,51 @@ Return a JSON response with this structure:
     {{
       "word": "misspelled_word",
       "suggestion": "correct_spelling",
-      "context": "surrounding text (15-20 words)"
+      "context": "The full sentence or paragraph containing the error (30-50 words)"
     }}
   ],
   "grammar_errors": [
     {{
-      "issue": "description of grammar issue",
-      "suggestion": "corrected version",
-      "context": "surrounding text (15-20 words)"
+      "issue": "Brief description of the grammar issue",
+      "original": "The original problematic sentence or phrase",
+      "suggestion": "The corrected version of the sentence/phrase",
+      "context": "The full paragraph containing the issue for context (30-50 words)"
     }}
   ],
   "formatting_issues": [
     {{
       "issue": "description (e.g., double space, missing space after period)",
-      "suggestion": "corrected version",
-      "context": "surrounding text (15-20 words)"
+      "original": "The text as it appears",
+      "suggestion": "The corrected version",
+      "context": "The surrounding sentence (20-30 words)"
     }}
   ]
 }}
 
-IMPORTANT:
-1. For SPELLING: Only flag actual misspellings. DO NOT flag:
-   - Proper nouns (company names, people, places)
-   - Technical terms (programming, industry jargon)
-   - Brand names or product names
-   - Intentional stylizations
+RULES:
 
-2. For GRAMMAR: Flag issues like:
-   - Subject-verb agreement
-   - Incorrect verb tenses
-   - Missing or incorrect articles
-   - Run-on sentences
-   - Comma splices
-   - Its vs it's, their vs they're
+1. For SPELLING:
+   - Flag words that are clearly misspelled (typos, wrong letters, missing letters)
+   - The "word" field must contain the ACTUAL misspelled word from the text
+   - SKIP these (not errors): proper nouns, company names, people names, place names
+   - SKIP these (not errors): technical terms, industry jargon, brand names, acronyms
+   - SKIP these (not errors): words that are correct but uncommon
+   - Examples of real errors to flag: "teh" (the), "recieve" (receive), "occured" (occurred), "seperate" (separate)
 
-3. For FORMATTING: Flag issues like:
-   - Double spaces between words
-   - Missing space after punctuation
-   - Inconsistent spacing
-   - Multiple punctuation marks
+2. For GRAMMAR:
+   - "original" must be the EXACT text as it appears
+   - "suggestion" must show the corrected sentence/phrase
+   - For verb tense issues, show BOTH conflicting sentences
+   - For serial comma issues, show the list and correction
+   - Include enough context to locate and fix the issue
 
-Return ONLY valid JSON, no other text. If no issues found, return empty arrays."""
+3. For FORMATTING:
+   - Flag double spaces, missing spaces after punctuation, inconsistent spacing
+   - "original" shows the problematic text exactly as it appears
+   - "suggestion" shows the corrected version
+
+Return ONLY valid JSON, no other text. If no issues found, return empty arrays.
+Be thorough but accurate - flag clear errors, skip ambiguous cases."""
 
         response = self.client.chat.completions.create(
             model=self.model,
@@ -144,38 +148,79 @@ Return ONLY valid JSON, no other text. If no issues found, return empty arrays."
 
         # Process spelling errors
         for error in result.get("spelling_errors", []):
+            word = error.get('word', 'unknown')
+            suggestion = error.get('suggestion', 'check spelling')
+            context = error.get('context', '')
+
+            # Build element showing the context with the error highlighted
+            element_text = f'"{word}" → "{suggestion}"'
+            if context:
+                element_text += f'\n\nContext:\n"{context}"'
+
             issues.append(Issue(
                 category=IssueCategory.SPELLING,
                 severity=Severity.MEDIUM,
-                title=f"Spelling error: '{error.get('word', 'unknown')}'",
-                description=f"The word '{error.get('word')}' appears to be misspelled.",
-                recommendation=f"Consider changing to: {error.get('suggestion', 'check spelling')}",
+                title=f"Spelling error: '{word}'",
+                description=f"The word '{word}' appears to be misspelled.",
+                recommendation=f"Change to: {suggestion}",
                 url=url,
-                context=error.get("context"),
+                element=element_text,
             ))
 
         # Process grammar errors
         for error in result.get("grammar_errors", []):
+            issue_desc = error.get('issue', 'Grammar issue detected')
+            original = error.get('original', '')
+            suggestion = error.get('suggestion', 'Review and correct the grammar')
+            context = error.get('context', '')
+
+            # Build element showing original vs suggestion
+            element_parts = []
+            if original:
+                element_parts.append(f'Original: "{original}"')
+            if suggestion and suggestion != issue_desc:
+                element_parts.append(f'Suggested: "{suggestion}"')
+            if context and context != original:
+                element_parts.append(f'\nContext:\n"{context}"')
+
+            element_text = '\n'.join(element_parts) if element_parts else issue_desc
+
             issues.append(Issue(
                 category=IssueCategory.GRAMMAR,
                 severity=Severity.MEDIUM,
-                title=f"Grammar issue: {error.get('issue', 'unknown')[:50]}",
-                description=error.get("issue", "Grammar issue detected"),
-                recommendation=error.get("suggestion", "Review and correct the grammar"),
+                title=f"Grammar issue: {issue_desc[:50]}",
+                description=issue_desc,
+                recommendation=suggestion if suggestion != issue_desc else "Review and correct the grammar",
                 url=url,
-                context=error.get("context"),
+                element=element_text,
             ))
 
         # Process formatting issues
         for error in result.get("formatting_issues", []):
+            issue_desc = error.get('issue', 'Formatting issue detected')
+            original = error.get('original', '')
+            suggestion = error.get('suggestion', 'Fix the formatting')
+            context = error.get('context', '')
+
+            # Build element showing original vs suggestion
+            element_parts = []
+            if original:
+                element_parts.append(f'Original: "{original}"')
+            if suggestion and suggestion != issue_desc:
+                element_parts.append(f'Suggested: "{suggestion}"')
+            if context and context != original:
+                element_parts.append(f'\nContext:\n"{context}"')
+
+            element_text = '\n'.join(element_parts) if element_parts else issue_desc
+
             issues.append(Issue(
                 category=IssueCategory.FORMATTING,
                 severity=Severity.LOW,
-                title=f"Formatting issue: {error.get('issue', 'unknown')[:50]}",
-                description=error.get("issue", "Formatting issue detected"),
-                recommendation=error.get("suggestion", "Fix the formatting"),
+                title=f"Formatting issue: {issue_desc[:50]}",
+                description=issue_desc,
+                recommendation=suggestion if suggestion != issue_desc else "Fix the formatting",
                 url=url,
-                context=error.get("context"),
+                element=element_text,
             ))
 
         return issues

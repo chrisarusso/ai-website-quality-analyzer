@@ -1,0 +1,461 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Website Quality Report - https://americanpackaging.com</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; line-height: 1.5; }
+                h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+                h2 { color: #444; margin-top: 30px; }
+                h3 { background: #e9ecef; padding: 12px 15px; margin: 15px 0 0 0; border-radius: 5px 5px 0 0; }
+                h3:hover { background: #dee2e6; }
+                .toggle-icon { display: inline-block; width: 20px; transition: transform 0.2s; }
+                .toggle-icon.collapsed { transform: rotate(-90deg); }
+                .score { font-size: 48px; font-weight: bold; }
+                .summary { display: flex; gap: 20px; flex-wrap: wrap; margin: 20px 0; }
+                .stat { background: #f8f9fa; padding: 15px 20px; border-radius: 8px; min-width: 120px; text-align: center; }
+                .stat strong { font-size: 24px; display: block; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+                th { background: #f8f9fa; font-weight: 600; }
+                tr:hover { background: #f8f9fa; }
+                .category-section { margin-bottom: 5px; }
+                .category-issues { background: #fff; border: 1px solid #e9ecef; border-top: none; padding: 10px; border-radius: 0 0 5px 5px; }
+                .category-issues.hidden { display: none; }
+                .issue a { color: #0066cc; text-decoration: none; }
+                .issue a:hover { text-decoration: underline; }
+                .nav-link { color: #0066cc; cursor: pointer; }
+                .nav-link:hover { text-decoration: underline; }
+                @media print {
+                    .category-issues { display: block !important; }
+                    h3 { break-after: avoid; }
+                }
+            </style>
+            <script>
+                function toggleCategory(category) {
+                    const issues = document.getElementById('issues-' + category);
+                    const icon = document.getElementById('icon-' + category);
+                    if (issues.classList.contains('hidden')) {
+                        issues.classList.remove('hidden');
+                        icon.classList.remove('collapsed');
+                    } else {
+                        issues.classList.add('hidden');
+                        icon.classList.add('collapsed');
+                    }
+                }
+                function scrollToCategory(category) {
+                    const section = document.getElementById('cat-' + category);
+                    const issues = document.getElementById('issues-' + category);
+                    const icon = document.getElementById('icon-' + category);
+                    if (section) {
+                        section.scrollIntoView({ behavior: 'smooth' });
+                        issues.classList.remove('hidden');
+                        icon.classList.remove('collapsed');
+                    }
+                }
+                function expandAll() {
+                    document.querySelectorAll('.category-issues').forEach(el => el.classList.remove('hidden'));
+                    document.querySelectorAll('.toggle-icon').forEach(el => el.classList.remove('collapsed'));
+                }
+                function collapseAll() {
+                    document.querySelectorAll('.category-issues').forEach(el => el.classList.add('hidden'));
+                    document.querySelectorAll('.toggle-icon').forEach(el => el.classList.add('collapsed'));
+                }
+            </script>
+        </head>
+        <body>
+            <h1>Website Quality Report</h1>
+            <p><strong>URL:</strong> <a href="https://americanpackaging.com" target="_blank">https://americanpackaging.com</a></p>
+            <p><strong>Scan Date:</strong> 2025-12-25 00:32:33</p>
+            <p><strong>Duration:</strong> 43.7s</p>
+
+            <h2>Overall Score</h2>
+            <div class="score" style="color: #dc3545;">36.5/100</div>
+
+            <h2>Summary</h2>
+            <div class="summary">
+                <div class="stat"><strong>5</strong>Pages Analyzed</div>
+                <div class="stat"><strong>46</strong>Total Issues</div>
+                <div class="stat" style="color: #dc3545;"><strong>0</strong>Critical</div>
+                <div class="stat" style="color: #fd7e14;"><strong>5</strong>High</div>
+                <div class="stat" style="color: #ffc107;"><strong>23</strong>Medium</div>
+                <div class="stat" style="color: #6c757d;"><strong>18</strong>Low</div>
+            </div>
+
+            <h2>Scores by Category</h2>
+            <p><em>Click a category to jump to its issues</em></p>
+            <table>
+                <tr><th>Category</th><th>Score</th><th>Issues</th></tr>
+                
+                <tr onclick="scrollToCategory('seo')" style="cursor: pointer;">
+                    <td>SEO</td>
+                    <td>64.7/100</td>
+                    <td>7</td>
+                </tr>
+                
+                <tr onclick="scrollToCategory('accessibility')" style="cursor: pointer;">
+                    <td>ACCESSIBILITY</td>
+                    <td>37.2/100</td>
+                    <td>17</td>
+                </tr>
+                
+                <tr onclick="scrollToCategory('compliance')" style="cursor: pointer;">
+                    <td>COMPLIANCE</td>
+                    <td>48.3/100</td>
+                    <td>15</td>
+                </tr>
+                
+                <tr onclick="scrollToCategory('performance')" style="cursor: pointer;">
+                    <td>PERFORMANCE</td>
+                    <td>64.7/100</td>
+                    <td>6</td>
+                </tr>
+                
+                <tr onclick="scrollToCategory('mobile')" style="cursor: pointer;">
+                    <td>MOBILE</td>
+                    <td>94.7/100</td>
+                    <td>1</td>
+                </tr>
+                
+            </table>
+
+            <h2>All Issues by Category</h2>
+            <p>
+                <span class="nav-link" onclick="expandAll()">Expand All</span> |
+                <span class="nav-link" onclick="collapseAll()">Collapse All</span>
+            </p>
+            
+                <div class="category-section" id="cat-seo">
+                    <h3 onclick="toggleCategory('seo')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-seo">▼</span>
+                        SEO (7 issues - Score: 64.7/100)
+                    </h3>
+                    <div class="category-issues" id="issues-seo">
+                        
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> Multiple H1 tags
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com" target="_blank">https://americanpackaging.com</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Keep only the most important H1 and change others to H2 or lower.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> Multiple H1 tags
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/" target="_blank">https://americanpackaging.com/</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Keep only the most important H1 and change others to H2 or lower.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> Multiple H1 tags
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/about-american-packaging-corporation" target="_blank">https://americanpackaging.com/about-american-packaging-corporation</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Keep only the most important H1 and change others to H2 or lower.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> Multiple H1 tags
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/contact" target="_blank">https://americanpackaging.com/contact</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Keep only the most important H1 and change others to H2 or lower.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> Missing meta description
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/search" target="_blank">https://americanpackaging.com/search</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add a compelling meta description between 150-160 characters.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> Skipped heading level
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/about-american-packaging-corporation" target="_blank">https://americanpackaging.com/about-american-packaging-corporation</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Use sequential heading levels (H1 → H2 → H3) for proper hierarchy.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> Incomplete Open Graph tags
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/search" target="_blank">https://americanpackaging.com/search</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add the missing Open Graph tags for better social media previews.</em>
+                    </div>
+                    
+                    </div>
+                </div>
+                
+                <div class="category-section" id="cat-accessibility">
+                    <h3 onclick="toggleCategory('accessibility')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-accessibility">▼</span>
+                        ACCESSIBILITY (17 issues - Score: 37.2/100)
+                    </h3>
+                    <div class="category-issues" id="issues-accessibility">
+                        
+                    <div class="issue" style="border-left: 4px solid #fd7e14; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #fd7e14;">[HIGH]</strong> Empty link text
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com" target="_blank">https://americanpackaging.com</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add descriptive text or aria-label to the link.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #fd7e14; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #fd7e14;">[HIGH]</strong> Empty link text
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/" target="_blank">https://americanpackaging.com/</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add descriptive text or aria-label to the link.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #fd7e14; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #fd7e14;">[HIGH]</strong> Empty link text
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/about-american-packaging-corporation" target="_blank">https://americanpackaging.com/about-american-packaging-corporation</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add descriptive text or aria-label to the link.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #fd7e14; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #fd7e14;">[HIGH]</strong> Empty link text
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/contact" target="_blank">https://americanpackaging.com/contact</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add descriptive text or aria-label to the link.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #fd7e14; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #fd7e14;">[HIGH]</strong> Empty link text
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/search" target="_blank">https://americanpackaging.com/search</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add descriptive text or aria-label to the link.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> Empty H1 heading
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/about-american-packaging-corporation" target="_blank">https://americanpackaging.com/about-american-packaging-corporation</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add text to the heading or remove it if not needed.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> Empty H1 heading
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/contact" target="_blank">https://americanpackaging.com/contact</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add text to the heading or remove it if not needed.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> Generic link text: 'learn more'
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com" target="_blank">https://americanpackaging.com</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Use descriptive text that explains where the link goes.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> Generic link text: 'learn more'
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com" target="_blank">https://americanpackaging.com</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Use descriptive text that explains where the link goes.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> Generic link text: 'learn more'
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com" target="_blank">https://americanpackaging.com</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Use descriptive text that explains where the link goes.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> Generic link text: 'learn more'
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/" target="_blank">https://americanpackaging.com/</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Use descriptive text that explains where the link goes.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> Generic link text: 'learn more'
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/" target="_blank">https://americanpackaging.com/</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Use descriptive text that explains where the link goes.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> Generic link text: 'learn more'
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/" target="_blank">https://americanpackaging.com/</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Use descriptive text that explains where the link goes.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> Generic link text: 'learn more'
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/about-american-packaging-corporation" target="_blank">https://americanpackaging.com/about-american-packaging-corporation</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Use descriptive text that explains where the link goes.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> Generic link text: 'learn more'
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/about-american-packaging-corporation" target="_blank">https://americanpackaging.com/about-american-packaging-corporation</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Use descriptive text that explains where the link goes.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> Generic link text: 'learn more'
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/about-american-packaging-corporation" target="_blank">https://americanpackaging.com/about-american-packaging-corporation</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Use descriptive text that explains where the link goes.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> Generic link text: 'click here'
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/contact" target="_blank">https://americanpackaging.com/contact</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Use descriptive text that explains where the link goes.</em>
+                    </div>
+                    
+                    </div>
+                </div>
+                
+                <div class="category-section" id="cat-compliance">
+                    <h3 onclick="toggleCategory('compliance')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-compliance">▼</span>
+                        COMPLIANCE (15 issues - Score: 48.3/100)
+                    </h3>
+                    <div class="category-issues" id="issues-compliance">
+                        
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> No cookie consent mechanism detected
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com" target="_blank">https://americanpackaging.com</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Implement a cookie consent banner for GDPR/CCPA compliance.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> Third-party tracking detected (6 services)
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com" target="_blank">https://americanpackaging.com</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Ensure tracking is disclosed in privacy policy and consent obtained.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> No cookie consent mechanism detected
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/" target="_blank">https://americanpackaging.com/</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Implement a cookie consent banner for GDPR/CCPA compliance.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> Third-party tracking detected (6 services)
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/" target="_blank">https://americanpackaging.com/</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Ensure tracking is disclosed in privacy policy and consent obtained.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> No cookie consent mechanism detected
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/about-american-packaging-corporation" target="_blank">https://americanpackaging.com/about-american-packaging-corporation</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Implement a cookie consent banner for GDPR/CCPA compliance.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> Third-party tracking detected (6 services)
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/about-american-packaging-corporation" target="_blank">https://americanpackaging.com/about-american-packaging-corporation</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Ensure tracking is disclosed in privacy policy and consent obtained.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> No cookie consent mechanism detected
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/contact" target="_blank">https://americanpackaging.com/contact</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Implement a cookie consent banner for GDPR/CCPA compliance.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> Third-party tracking detected (6 services)
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/contact" target="_blank">https://americanpackaging.com/contact</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Ensure tracking is disclosed in privacy policy and consent obtained.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> No cookie consent mechanism detected
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/search" target="_blank">https://americanpackaging.com/search</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Implement a cookie consent banner for GDPR/CCPA compliance.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> Third-party tracking detected (6 services)
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/search" target="_blank">https://americanpackaging.com/search</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Ensure tracking is disclosed in privacy policy and consent obtained.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> No accessibility statement found
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com" target="_blank">https://americanpackaging.com</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Consider adding an accessibility statement for WCAG compliance transparency.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> No accessibility statement found
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/" target="_blank">https://americanpackaging.com/</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Consider adding an accessibility statement for WCAG compliance transparency.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> No accessibility statement found
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/about-american-packaging-corporation" target="_blank">https://americanpackaging.com/about-american-packaging-corporation</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Consider adding an accessibility statement for WCAG compliance transparency.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> No accessibility statement found
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/contact" target="_blank">https://americanpackaging.com/contact</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Consider adding an accessibility statement for WCAG compliance transparency.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> No accessibility statement found
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/search" target="_blank">https://americanpackaging.com/search</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Consider adding an accessibility statement for WCAG compliance transparency.</em>
+                    </div>
+                    
+                    </div>
+                </div>
+                
+                <div class="category-section" id="cat-performance">
+                    <h3 onclick="toggleCategory('performance')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-performance">▼</span>
+                        PERFORMANCE (6 issues - Score: 64.7/100)
+                    </h3>
+                    <div class="category-issues" id="issues-performance">
+                        
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> 13 render-blocking scripts
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com" target="_blank">https://americanpackaging.com</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add async or defer attribute to scripts, or move them to end of body.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> 13 render-blocking scripts
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/" target="_blank">https://americanpackaging.com/</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add async or defer attribute to scripts, or move them to end of body.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> 12 render-blocking scripts
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/about-american-packaging-corporation" target="_blank">https://americanpackaging.com/about-american-packaging-corporation</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add async or defer attribute to scripts, or move them to end of body.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> 6 images without dimensions
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/about-american-packaging-corporation" target="_blank">https://americanpackaging.com/about-american-packaging-corporation</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add width and height attributes to all images.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> 14 render-blocking scripts
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/contact" target="_blank">https://americanpackaging.com/contact</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add async or defer attribute to scripts, or move them to end of body.</em>
+                    </div>
+                    
+                    <div class="issue" style="border-left: 4px solid #ffc107; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #ffc107;">[MEDIUM]</strong> 10 render-blocking scripts
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/search" target="_blank">https://americanpackaging.com/search</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Add async or defer attribute to scripts, or move them to end of body.</em>
+                    </div>
+                    
+                    </div>
+                </div>
+                
+                <div class="category-section" id="cat-mobile">
+                    <h3 onclick="toggleCategory('mobile')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-mobile">▼</span>
+                        MOBILE (1 issues - Score: 94.7/100)
+                    </h3>
+                    <div class="category-issues" id="issues-mobile">
+                        
+                    <div class="issue" style="border-left: 4px solid #6c757d; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
+                        <strong style="color: #6c757d;">[LOW]</strong> No responsive images (srcset)
+                        <br><small style="color: #666;">URL: <a href="https://americanpackaging.com/about-american-packaging-corporation" target="_blank">https://americanpackaging.com/about-american-packaging-corporation</a></small>
+                        <br><em style="color: #555; font-size: 0.9em;">Use srcset to serve appropriately sized images for different screens.</em>
+                    </div>
+                    
+                    </div>
+                </div>
+                
+
+            <hr style="margin-top: 40px;">
+            <p style="color: #666; font-size: 0.9em;">
+                Generated by Website Quality Agent v0.1.0
+            </p>
+        </body>
+        </html>
+        

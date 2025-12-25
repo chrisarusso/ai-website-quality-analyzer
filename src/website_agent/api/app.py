@@ -170,9 +170,18 @@ async def run_scan(scan_id: str, url: str, max_pages: int):
     try:
         store.update_scan_status(scan_id, "running")
 
+        # Progress callback to update scan status
+        def progress_callback(pages_done, pages_total, current_url):
+            store.update_scan_status(
+                scan_id,
+                "running",
+                pages_crawled=pages_done,
+                pages_total=pages_total
+            )
+
         # Crawl the site
         crawler = PlaywrightCrawler(url, max_pages=max_pages)
-        crawl_results = await crawler.crawl()
+        crawl_results = await crawler.crawl(progress_callback=progress_callback)
 
         # Analyze each page
         pages = []

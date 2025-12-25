@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.americanpackaging.com)",
+      "WebFetch(domain:americanpackaging.com)",
+      "Bash(curl:*)",
+      "Bash(uv run:*)",
+      "Bash(open:*)",
+      "Bash(ssh:*)"
+    ]
+  }
+}

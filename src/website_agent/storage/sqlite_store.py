@@ -49,6 +49,8 @@ class SQLiteStore:
                     summary_json TEXT,
                     cms_info_json TEXT,
                     error TEXT,
+                    pages_crawled INTEGER DEFAULT 0,
+                    pages_total INTEGER DEFAULT 0,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 );
 
@@ -116,6 +118,8 @@ class SQLiteStore:
         status: str,
         error: Optional[str] = None,
         summary: Optional[ScanSummary] = None,
+        pages_crawled: Optional[int] = None,
+        pages_total: Optional[int] = None,
     ):
         """Update scan status."""
         conn = self._get_conn()
@@ -134,6 +138,14 @@ class SQLiteStore:
             if summary:
                 updates.append("summary_json = ?")
                 params.append(summary.model_dump_json())
+
+            if pages_crawled is not None:
+                updates.append("pages_crawled = ?")
+                params.append(pages_crawled)
+
+            if pages_total is not None:
+                updates.append("pages_total = ?")
+                params.append(pages_total)
 
             params.append(scan_id)
             conn.execute(
@@ -265,18 +277,14 @@ class SQLiteStore:
         conn = self._get_conn()
         try:
             row = conn.execute(
-                "SELECT id, url, status, started_at, completed_at, error FROM scans WHERE id = ?",
+                "SELECT id, url, status, started_at, completed_at, error, pages_crawled, pages_total FROM scans WHERE id = ?",
                 (scan_id,),
             ).fetchone()
 
             if not row:
                 return None
 
-            # Count pages and issues
-            pages_count = conn.execute(
-                "SELECT COUNT(*) FROM pages WHERE scan_id = ?", (scan_id,)
-            ).fetchone()[0]
-
+            # Count issues from database
             issues_count = conn.execute(
                 "SELECT COUNT(*) FROM issues WHERE scan_id = ?", (scan_id,)
             ).fetchone()[0]
@@ -285,7 +293,8 @@ class SQLiteStore:
                 id=row["id"],
                 url=row["url"],
                 status=row["status"],
-                pages_crawled=pages_count,
+                pages_crawled=row["pages_crawled"] or 0,
+                pages_total=row["pages_total"] or 0,
                 issues_found=issues_count,
                 started_at=datetime.fromisoformat(row["started_at"]),
                 completed_at=datetime.fromisoformat(row["completed_at"]) if row["completed_at"] else None,

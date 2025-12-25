@@ -71,7 +71,7 @@ class SEOAnalyzer(BaseAnalyzer):
                 description="The page does not have a title tag, which is critical for SEO and user experience.",
                 recommendation="Add a unique, descriptive title tag between 50-60 characters.",
                 url=url,
-                element="<title>",
+                element="<head>...</head>  <!-- No <title> tag found -->",
             ))
         elif not title.string or not title.string.strip():
             issues.append(self._create_issue(
@@ -80,7 +80,7 @@ class SEOAnalyzer(BaseAnalyzer):
                 description="The title tag exists but is empty.",
                 recommendation="Add descriptive text to the title tag.",
                 url=url,
-                element="<title>",
+                element="<title></title>",
             ))
         else:
             title_text = title.string.strip()
@@ -91,8 +91,7 @@ class SEOAnalyzer(BaseAnalyzer):
                     description=f"Title is only {len(title_text)} characters. Short titles may not be descriptive enough.",
                     recommendation="Expand the title to 50-60 characters with relevant keywords.",
                     url=url,
-                    element="<title>",
-                    context=title_text,
+                    element=f"<title>{title_text}</title>",
                 ))
             elif len(title_text) > 60:
                 issues.append(self._create_issue(
@@ -101,8 +100,7 @@ class SEOAnalyzer(BaseAnalyzer):
                     description=f"Title is {len(title_text)} characters. Search engines may truncate it.",
                     recommendation="Shorten the title to under 60 characters.",
                     url=url,
-                    element="<title>",
-                    context=title_text[:100] + "...",
+                    element=f"<title>{title_text}</title>",
                 ))
 
         return issues
@@ -119,7 +117,7 @@ class SEOAnalyzer(BaseAnalyzer):
                 description="No meta description found. Search engines may generate one automatically.",
                 recommendation="Add a compelling meta description between 150-160 characters.",
                 url=url,
-                element='<meta name="description">',
+                element='<head>...</head>  <!-- No <meta name="description"> tag found -->',
             ))
         else:
             content = meta_desc.get("content", "").strip()
@@ -130,7 +128,7 @@ class SEOAnalyzer(BaseAnalyzer):
                     description="Meta description tag exists but has no content.",
                     recommendation="Add descriptive content to the meta description.",
                     url=url,
-                    element='<meta name="description">',
+                    element='<meta name="description" content="">',
                 ))
             elif len(content) < 70:
                 issues.append(self._create_issue(
@@ -139,18 +137,17 @@ class SEOAnalyzer(BaseAnalyzer):
                     description=f"Meta description is only {len(content)} characters.",
                     recommendation="Expand to 150-160 characters for better SERP display.",
                     url=url,
-                    element='<meta name="description">',
-                    context=content,
+                    element=f'<meta name="description" content="{content}">',
                 ))
             elif len(content) > 160:
+                truncated = content[:150] + "..."
                 issues.append(self._create_issue(
                     severity=Severity.LOW,
                     title="Meta description too long",
                     description=f"Meta description is {len(content)} characters and may be truncated.",
                     recommendation="Shorten to under 160 characters.",
                     url=url,
-                    element='<meta name="description">',
-                    context=content[:200] + "...",
+                    element=f'<meta name="description" content="{truncated}">',
                 ))
 
         return issues
@@ -167,18 +164,21 @@ class SEOAnalyzer(BaseAnalyzer):
                 description="No H1 heading found. Every page should have exactly one H1.",
                 recommendation="Add a descriptive H1 heading that matches the page's main topic.",
                 url=url,
-                element="<h1>",
+                element="<!-- No <h1> tag found on this page -->",
             ))
         elif len(h1_tags) > 1:
-            h1_texts = [h1.get_text(strip=True)[:50] for h1 in h1_tags]
+            # Show all the H1 tags found
+            h1_elements = []
+            for h1 in h1_tags:
+                text = h1.get_text(strip=True)[:80]
+                h1_elements.append(f"<h1>{text}</h1>" if text else "<h1></h1>")
             issues.append(self._create_issue(
                 severity=Severity.MEDIUM,
                 title="Multiple H1 tags",
                 description=f"Found {len(h1_tags)} H1 tags. Best practice is to have exactly one.",
                 recommendation="Keep only the most important H1 and change others to H2 or lower.",
                 url=url,
-                element="<h1>",
-                context="; ".join(h1_texts),
+                element="\n".join(h1_elements),
             ))
         else:
             h1_text = h1_tags[0].get_text(strip=True)
@@ -189,8 +189,16 @@ class SEOAnalyzer(BaseAnalyzer):
                     description="The H1 heading is very short and may not be descriptive enough.",
                     recommendation="Make the H1 more descriptive of the page content.",
                     url=url,
-                    element="<h1>",
-                    context=h1_text,
+                    element=f"<h1>{h1_text}</h1>",
+                ))
+            elif not h1_text:
+                issues.append(self._create_issue(
+                    severity=Severity.MEDIUM,
+                    title="Empty H1 tag",
+                    description="The H1 heading exists but has no text content.",
+                    recommendation="Add descriptive text to the H1 heading.",
+                    url=url,
+                    element="<h1></h1>",
                 ))
 
         return issues
@@ -207,7 +215,7 @@ class SEOAnalyzer(BaseAnalyzer):
                 description="No canonical link tag found. This can lead to duplicate content issues.",
                 recommendation='Add <link rel="canonical" href="..."> pointing to the preferred URL.',
                 url=url,
-                element='<link rel="canonical">',
+                element='<head>...</head>  <!-- No <link rel="canonical"> tag found -->',
             ))
         else:
             href = canonical.get("href", "").strip()
@@ -218,7 +226,7 @@ class SEOAnalyzer(BaseAnalyzer):
                     description="Canonical tag exists but has no href value.",
                     recommendation="Add the preferred URL to the canonical tag's href attribute.",
                     url=url,
-                    element='<link rel="canonical">',
+                    element='<link rel="canonical" href="">',
                 ))
 
         return issues
@@ -303,14 +311,15 @@ class SEOAnalyzer(BaseAnalyzer):
         levels = [int(h.name[1]) for h in headings]
         for i in range(1, len(levels)):
             if levels[i] > levels[i-1] + 1:
+                prev_text = headings[i-1].get_text(strip=True)[:40]
+                curr_text = headings[i].get_text(strip=True)[:40]
                 issues.append(self._create_issue(
                     severity=Severity.LOW,
                     title="Skipped heading level",
                     description=f"Heading jumps from H{levels[i-1]} to H{levels[i]}, skipping a level.",
                     recommendation="Use sequential heading levels (H1 → H2 → H3) for proper hierarchy.",
                     url=url,
-                    element=f"<h{levels[i]}>",
-                    context=headings[i].get_text(strip=True)[:50],
+                    element=f"<h{levels[i-1]}>{prev_text}</h{levels[i-1]}>\n...\n<h{levels[i]}>{curr_text}</h{levels[i]}>",
                 ))
                 break  # Report only first occurrence
 

@@ -50,7 +50,11 @@ def create_parser() -> argparse.ArgumentParser:
     scan_parser.add_argument("url", help="URL to scan")
     scan_parser.add_argument(
         "--max-pages", "-m", type=int, default=20,
-        help="Maximum pages to crawl (default: 20)"
+        help="Maximum pages to crawl (default: 20, use 0 for unlimited)"
+    )
+    scan_parser.add_argument(
+        "--all", "-a", action="store_true",
+        help="Crawl all pages (no limit)"
     )
     scan_parser.add_argument(
         "--output", "-o", choices=["text", "html", "json"], default="text",
@@ -195,11 +199,18 @@ async def run_scan(url: str, max_pages: int) -> ScanResult:
 
 def cmd_scan(args):
     """Handle scan command."""
-    console.print(f"\n[bold]Scanning:[/bold] {args.url}")
-    console.print(f"[dim]Max pages: {args.max_pages}[/dim]\n")
+    # Handle unlimited crawling
+    max_pages = args.max_pages
+    if args.all or max_pages == 0:
+        max_pages = 999999  # Effectively unlimited
+        console.print(f"\n[bold]Scanning:[/bold] {args.url}")
+        console.print(f"[dim]Max pages: unlimited[/dim]\n")
+    else:
+        console.print(f"\n[bold]Scanning:[/bold] {args.url}")
+        console.print(f"[dim]Max pages: {max_pages}[/dim]\n")
 
     try:
-        scan = asyncio.run(run_scan(args.url, args.max_pages))
+        scan = asyncio.run(run_scan(args.url, max_pages))
 
         if args.output == "text":
             aggregator = ReportAggregator()

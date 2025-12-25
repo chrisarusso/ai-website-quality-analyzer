@@ -3,6 +3,7 @@
 Combines issues from all pages, calculates scores, and generates summaries.
 """
 
+import html as html_module
 from collections import defaultdict
 from typing import Optional
 
@@ -266,6 +267,21 @@ class ReportAggregator:
         for page in scan.pages:
             all_issues.extend(page.issues)
 
+        # Build pages list HTML
+        pages_list_html = ""
+        for i, page in enumerate(sorted(scan.pages, key=lambda p: p.url), 1):
+            status_icon = "✅" if page.status_code == 200 else f"⚠️ {page.status_code}"
+            issue_count = len(page.issues)
+            issue_badge = f'<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.8em; margin-left: 8px;">{issue_count}</span>' if issue_count > 0 else ""
+            pages_list_html += f'''
+            <div style="padding: 6px 0; border-bottom: 1px solid #eee; font-size: 0.9em;">
+                <span style="color: #666; width: 40px; display: inline-block;">{i}.</span>
+                {status_icon}
+                <a href="{page.url}" target="_blank" style="color: #0066cc; text-decoration: none;">{page.url}</a>
+                {issue_badge}
+            </div>
+            '''
+
         # Group issues by category
         issues_by_category: dict[str, list[Issue]] = defaultdict(list)
         for issue in all_issues:
@@ -290,11 +306,36 @@ class ReportAggregator:
                     display_url = issue.url
                     if len(display_url) > 80:
                         display_url = display_url[:77] + "..."
+
+                    # Build the HTML context/code snippet section
+                    code_html = ""
+                    if issue.element:
+                        # Escape HTML for display
+                        escaped_element = html_module.escape(issue.element)
+                        code_html = f'''
+                        <div class="code-context">
+                            <pre><code>{escaped_element}</code></pre>
+                        </div>
+                        '''
+
                     issues_html += f"""
-                    <div class="issue" style="border-left: 4px solid {color}; padding: 8px 12px; margin: 6px 0; background: #f8f9fa;">
-                        <strong style="color: {color};">[{issue.severity.upper()}]</strong> {issue.title}
-                        <br><small style="color: #666;">URL: <a href="{issue.url}" target="_blank">{display_url}</a></small>
-                        <br><em style="color: #555; font-size: 0.9em;">{issue.recommendation}</em>
+                    <div class="issue severity-{issue.severity}" data-severity="{issue.severity}" style="border-left: 4px solid {color}; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: {color};">[{issue.severity.upper()}]</strong> {issue.title}
+                            </div>
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #666; cursor: not-allowed;" title="Auto-fix coming soon">
+                                <input type="checkbox" disabled style="cursor: not-allowed;">
+                                <span>Agent: Fix this</span>
+                            </label>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="{issue.url}" target="_blank">{display_url}</a></small>
+                        </div>
+                        {code_html}
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 {issue.recommendation}</em>
+                        </div>
                     </div>
                     """
 
@@ -354,6 +395,11 @@ class ReportAggregator:
                 .issue a:hover {{ text-decoration: underline; }}
                 .nav-link {{ color: #0066cc; cursor: pointer; }}
                 .nav-link:hover {{ text-decoration: underline; }}
+                .code-context {{ margin: 10px 0; }}
+                .code-context pre {{ background: #1e1e1e; color: #d4d4d4; padding: 12px 15px; border-radius: 6px; overflow-x: auto; margin: 0; font-size: 0.85em; line-height: 1.4; }}
+                .code-context code {{ font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace; white-space: pre-wrap; word-break: break-word; }}
+                .fix-checkbox {{ opacity: 0.6; }}
+                .fix-checkbox:hover {{ opacity: 1; }}
                 @media print {{
                     .category-issues {{ display: block !important; }}
                     h3 {{ break-after: avoid; }}
@@ -389,6 +435,43 @@ class ReportAggregator:
                     document.querySelectorAll('.category-issues').forEach(el => el.classList.add('hidden'));
                     document.querySelectorAll('.toggle-icon').forEach(el => el.classList.add('collapsed'));
                 }}
+                function togglePages() {{
+                    const list = document.getElementById('pages-list');
+                    const icon = document.getElementById('icon-pages');
+                    if (list.classList.contains('hidden')) {{
+                        list.classList.remove('hidden');
+                        icon.textContent = '▼';
+                    }} else {{
+                        list.classList.add('hidden');
+                        icon.textContent = '▶';
+                    }}
+                }}
+                function filterBySeverity() {{
+                    const showCritical = document.getElementById('filter-critical').checked;
+                    const showHigh = document.getElementById('filter-high').checked;
+                    const showMedium = document.getElementById('filter-medium').checked;
+                    const showLow = document.getElementById('filter-low').checked;
+
+                    document.querySelectorAll('.issue').forEach(issue => {{
+                        const severity = issue.dataset.severity;
+                        let show = false;
+                        if (severity === 'critical' && showCritical) show = true;
+                        if (severity === 'high' && showHigh) show = true;
+                        if (severity === 'medium' && showMedium) show = true;
+                        if (severity === 'low' && showLow) show = true;
+                        issue.style.display = show ? 'block' : 'none';
+                    }});
+
+                    // Update category issue counts
+                    document.querySelectorAll('.category-section').forEach(section => {{
+                        const visibleIssues = section.querySelectorAll('.issue:not([style*="display: none"])').length;
+                        const totalIssues = section.querySelectorAll('.issue').length;
+                        const countSpan = section.querySelector('.visible-count');
+                        if (countSpan) {{
+                            countSpan.textContent = visibleIssues < totalIssues ? `${{visibleIssues}}/${{totalIssues}} shown` : `${{totalIssues}} issues`;
+                        }}
+                    }});
+                }}
             </script>
         </head>
         <body>
@@ -417,14 +500,112 @@ class ReportAggregator:
                 {category_summary_html}
             </table>
 
+            <h2 onclick="togglePages()" style="cursor: pointer; user-select: none;">
+                <span class="toggle-icon" id="icon-pages">▶</span>
+                Pages Crawled ({len(scan.pages)} URLs)
+            </h2>
+            <div id="pages-list" class="pages-list hidden" style="background: #fff; border: 1px solid #e9ecef; padding: 15px; border-radius: 5px; max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+                {pages_list_html}
+            </div>
+
             <h2>All Issues by Category</h2>
-            <p>
-                <span class="nav-link" onclick="expandAll()">Expand All</span> |
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <strong>Filter by Severity:</strong>
+                <label style="margin-left: 15px; cursor: pointer;">
+                    <input type="checkbox" id="filter-critical" checked onchange="filterBySeverity()">
+                    <span style="color: #dc3545;">Critical</span>
+                </label>
+                <label style="margin-left: 15px; cursor: pointer;">
+                    <input type="checkbox" id="filter-high" checked onchange="filterBySeverity()">
+                    <span style="color: #fd7e14;">High</span>
+                </label>
+                <label style="margin-left: 15px; cursor: pointer;">
+                    <input type="checkbox" id="filter-medium" checked onchange="filterBySeverity()">
+                    <span style="color: #ffc107;">Medium</span>
+                </label>
+                <label style="margin-left: 15px; cursor: pointer;">
+                    <input type="checkbox" id="filter-low" onchange="filterBySeverity()">
+                    <span style="color: #6c757d;">Low</span>
+                </label>
+                <span style="margin-left: 20px; color: #666;">|</span>
+                <span class="nav-link" onclick="expandAll()" style="margin-left: 15px;">Expand All</span>
+                <span style="color: #666;">|</span>
                 <span class="nav-link" onclick="collapseAll()">Collapse All</span>
-            </p>
+            </div>
             {category_sections_html}
 
             <hr style="margin-top: 40px;">
+
+            <h2>Why These Issues Matter</h2>
+            <p style="color: #666; margin-bottom: 15px;">Reference links explaining the importance of each issue type:</p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin-top: 0; color: #333;">SEO Issues</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">
+                        <li><a href="https://developers.google.com/search/docs/fundamentals/seo-starter-guide" target="_blank">Google SEO Starter Guide</a></li>
+                        <li><a href="https://developers.google.com/search/docs/appearance/title-link" target="_blank">Title Tags Best Practices</a></li>
+                        <li><a href="https://developers.google.com/search/docs/appearance/snippet" target="_blank">Meta Descriptions Guide</a></li>
+                        <li><a href="https://web.dev/articles/headings-and-landmarks" target="_blank">Heading Structure (H1-H6)</a></li>
+                        <li><a href="https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls" target="_blank">Canonical URLs</a></li>
+                        <li><a href="https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data" target="_blank">Structured Data (Schema.org)</a></li>
+                    </ul>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin-top: 0; color: #333;">Accessibility (WCAG)</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">
+                        <li><a href="https://www.w3.org/WAI/WCAG21/quickref/" target="_blank">WCAG 2.1 Quick Reference</a></li>
+                        <li><a href="https://www.w3.org/WAI/tutorials/images/" target="_blank">Image Alt Text Guide</a></li>
+                        <li><a href="https://www.w3.org/WAI/tutorials/forms/labels/" target="_blank">Form Labels Best Practices</a></li>
+                        <li><a href="https://www.w3.org/WAI/WCAG21/Understanding/link-purpose-in-context" target="_blank">Link Text Requirements</a></li>
+                        <li><a href="https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships" target="_blank">Heading Hierarchy</a></li>
+                        <li><a href="https://www.w3.org/WAI/WCAG21/Understanding/language-of-page" target="_blank">Language Declaration</a></li>
+                    </ul>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin-top: 0; color: #333;">Performance</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">
+                        <li><a href="https://web.dev/articles/vitals" target="_blank">Core Web Vitals</a></li>
+                        <li><a href="https://web.dev/articles/optimize-lcp" target="_blank">Largest Contentful Paint (LCP)</a></li>
+                        <li><a href="https://web.dev/articles/cls" target="_blank">Cumulative Layout Shift (CLS)</a></li>
+                        <li><a href="https://web.dev/articles/render-blocking-resources" target="_blank">Render-Blocking Resources</a></li>
+                        <li><a href="https://web.dev/articles/browser-level-image-lazy-loading" target="_blank">Image Lazy Loading</a></li>
+                    </ul>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin-top: 0; color: #333;">Compliance & Security</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">
+                        <li><a href="https://gdpr.eu/cookies/" target="_blank">GDPR Cookie Requirements</a></li>
+                        <li><a href="https://oag.ca.gov/privacy/ccpa" target="_blank">CCPA Compliance Guide</a></li>
+                        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP" target="_blank">Content Security Policy</a></li>
+                        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security" target="_blank">HTTPS/HSTS Security</a></li>
+                    </ul>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin-top: 0; color: #333;">Mobile & Responsive</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">
+                        <li><a href="https://developers.google.com/search/docs/crawling-indexing/mobile/mobile-sites-mobile-first-indexing" target="_blank">Mobile-First Indexing</a></li>
+                        <li><a href="https://web.dev/articles/responsive-web-design-basics" target="_blank">Responsive Web Design</a></li>
+                        <li><a href="https://web.dev/articles/accessible-tap-targets" target="_blank">Touch Target Sizes</a></li>
+                        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Viewport_meta_tag" target="_blank">Viewport Meta Tag</a></li>
+                    </ul>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin-top: 0; color: #333;">Content Quality</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">
+                        <li><a href="https://developers.google.com/search/docs/fundamentals/creating-helpful-content" target="_blank">Google's Helpful Content</a></li>
+                        <li><a href="https://www.nngroup.com/articles/writing-for-the-web/" target="_blank">Writing for the Web (NN Group)</a></li>
+                        <li><a href="https://www.w3.org/WAI/WCAG21/Understanding/reading-level" target="_blank">Readability Requirements</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <hr>
             <p style="color: #666; font-size: 0.9em;">
                 Generated by Website Quality Agent v0.1.0
             </p>
