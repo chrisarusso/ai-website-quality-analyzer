@@ -74,11 +74,26 @@ session_secret = SESSION_SECRET_KEY or secrets.token_hex(32)
 app.add_middleware(SessionMiddleware, secret_key=session_secret)
 
 
+# Get path prefix from API_BASE_URL (e.g., "/website-quality-agent" from "https://internal.savaslabs.com/website-quality-agent")
+def get_path_prefix():
+    """Extract path prefix from API_BASE_URL."""
+    from urllib.parse import urlparse
+    from ..config import API_BASE_URL
+    if API_BASE_URL:
+        parsed = urlparse(API_BASE_URL)
+        if parsed.path and parsed.path != '/':
+            return parsed.path.rstrip('/')
+    return ""
+
+PATH_PREFIX = get_path_prefix()
+
+
 # Exception handler for auth redirect
 @app.exception_handler(AuthRedirectException)
 async def auth_redirect_handler(request: Request, exc: AuthRedirectException):
     """Redirect unauthenticated browser requests to login page."""
-    return RedirectResponse(url="/auth/login", status_code=302)
+    login_url = f"{PATH_PREFIX}/auth/login"
+    return RedirectResponse(url=login_url, status_code=302)
 
 # CORS for frontend access
 app.add_middleware(

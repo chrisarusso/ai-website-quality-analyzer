@@ -69,10 +69,21 @@ def require_auth_or_redirect(request: Request) -> Optional[dict]:
     return get_current_user(request)
 
 
+def get_path_prefix():
+    """Extract path prefix from API_BASE_URL."""
+    from urllib.parse import urlparse
+    if API_BASE_URL:
+        parsed = urlparse(API_BASE_URL)
+        if parsed.path and parsed.path != '/':
+            return parsed.path.rstrip('/')
+    return ""
+
+
 async def login(request: Request) -> RedirectResponse:
     """Initiate Google OAuth login flow."""
     # Store the original URL to redirect back after login
-    next_url = request.query_params.get('next', '/')
+    prefix = get_path_prefix()
+    next_url = request.query_params.get('next', f'{prefix}/')
     request.session['next_url'] = next_url
 
     redirect_uri = f"{API_BASE_URL}/auth/callback"
@@ -116,14 +127,16 @@ async def callback(request: Request) -> RedirectResponse:
     }
 
     # Redirect to original URL or home
-    next_url = request.session.pop('next_url', '/')
+    prefix = get_path_prefix()
+    next_url = request.session.pop('next_url', f'{prefix}/')
     return RedirectResponse(url=next_url)
 
 
 async def logout(request: Request) -> RedirectResponse:
     """Clear session and logout."""
     request.session.clear()
-    return RedirectResponse(url='/')
+    prefix = get_path_prefix()
+    return RedirectResponse(url=f'{prefix}/')
 
 
 def get_login_url(next_url: str = '/') -> str:
