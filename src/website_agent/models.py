@@ -150,3 +150,103 @@ class ScanStatus(BaseModel):
     started_at: datetime
     completed_at: Optional[datetime] = None
     error: Optional[str] = None
+
+
+# =============================================================================
+# Fix-related models for the auto-fix feature
+# =============================================================================
+
+
+class FixType(str, Enum):
+    """Classification of how an issue can be fixed."""
+    CODE_FIX = "code_fix"        # Fix via Git PR (templates, config)
+    CONTENT_FIX = "content_fix"  # Fix via CMS (Drupal content/media)
+    MANUAL_ONLY = "manual_only"  # Requires human judgment
+    NOT_FIXABLE = "not_fixable"  # Detection-only (3rd party, external)
+
+
+class FixStatus(str, Enum):
+    """Status of a proposed fix."""
+    PENDING = "pending"              # Created, awaiting processing
+    PROCESSING = "processing"        # Agent is working on it
+    PR_CREATED = "pr_created"        # GitHub PR created, awaiting review
+    DRAFT_CREATED = "draft_created"  # Drupal draft revision created
+    APPROVED = "approved"            # Human approved
+    REJECTED = "rejected"            # Human rejected
+    APPLIED = "applied"              # Fix successfully applied
+    FAILED = "failed"                # Fix attempt failed
+
+
+class ProposedFix(BaseModel):
+    """A proposed fix for an issue."""
+    id: str = Field(..., description="Unique fix ID")
+    scan_id: str = Field(..., description="Reference to the scan")
+    issue_id: int = Field(..., description="Reference to issues.id from SQLite")
+
+    # Classification
+    fix_type: FixType
+    status: FixStatus = FixStatus.PENDING
+
+    # Target information
+    target_type: Optional[str] = Field(
+        None, description="drupal_media, drupal_node, or git_file"
+    )
+    target_id: Optional[str] = Field(
+        None, description="UUID, node ID, or file path"
+    )
+    target_field: Optional[str] = Field(
+        None, description="For Drupal: which field to update"
+    )
+
+    # The fix
+    original_value: Optional[str] = None
+    proposed_value: Optional[str] = None
+
+    # User context
+    user_instructions: Optional[str] = Field(
+        None, description="User-provided context or instructions"
+    )
+
+    # Metadata
+    confidence: float = Field(0.0, ge=0.0, le=1.0)
+    ai_generated: bool = True
+
+    # Tracking
+    github_issue_url: Optional[str] = None
+    github_issue_number: Optional[int] = None
+    github_pr_url: Optional[str] = None
+    drupal_revision_url: Optional[str] = None
+
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
+    reviewed_at: Optional[datetime] = None
+    reviewed_by: Optional[str] = None
+
+    # Error tracking
+    error_message: Optional[str] = None
+
+    class Config:
+        use_enum_values = True
+
+
+class FixRequestItem(BaseModel):
+    """Single issue to fix with optional user context."""
+    issue_id: int
+    user_instructions: Optional[str] = None
+
+
+class FixRequest(BaseModel):
+    """Request to fix selected issues."""
+    scan_id: str
+    issues: list[FixRequestItem]
+    github_repo: str = "savaslabs/savaslabs.com"
+    create_github_issues: bool = True
+
+
+class FixResponse(BaseModel):
+    """Response after initiating fix process."""
+    fix_batch_id: str
+    fixes_created: int
+    github_issues_created: int
+    message: str

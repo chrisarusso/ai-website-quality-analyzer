@@ -313,18 +313,37 @@ class ReportAggregator:
 
         return "\n".join(lines)
 
-    def generate_html_report(self, scan: ScanResult, summary: Optional[ScanSummary] = None) -> str:
+    def generate_html_report(
+        self,
+        scan: ScanResult,
+        summary: Optional[ScanSummary] = None,
+        issue_ids: Optional[dict[str, int]] = None,
+        enable_fixes: bool = True,
+    ) -> str:
         """Generate an HTML report with all issues.
 
         Args:
             scan: Complete scan result
             summary: Pre-calculated summary (optional)
+            issue_ids: Optional mapping from issue hash to database ID
+            enable_fixes: Whether to enable the fix UI (checkboxes, Run Fixes button)
 
         Returns:
             HTML report string
         """
         if summary is None:
             summary = self.aggregate(scan)
+
+        # Global issue counter for generating unique IDs
+        issue_counter = [0]  # Use list to allow mutation in nested function
+
+        def get_issue_id(issue: Issue) -> str:
+            """Generate a unique ID for an issue."""
+            issue_counter[0] += 1
+            # Create a hash-based ID for matching
+            key = f"{issue.category}:{issue.severity}:{issue.title}:{issue.url}"
+            issue_hash = hashlib.md5(key.encode()).hexdigest()[:8]
+            return f"issue-{issue_counter[0]}-{issue_hash}"
 
         severity_colors = {
             "critical": "#dc3545",
@@ -435,16 +454,38 @@ class ReportAggregator:
                         </div>
                         '''
 
+                    # Generate unique ID for this issue
+                    issue_id = get_issue_id(issue)
+                    escaped_title = html_module.escape(issue.title).replace("'", "\\'").replace('"', '&quot;')
+
+                    # Build fix controls HTML (checkbox + instruction input)
+                    fix_controls_html = ""
+                    if enable_fixes:
+                        fix_controls_html = f'''
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="{issue_id}"
+                                    data-category="{issue.category}"
+                                    data-severity="{issue.severity}"
+                                    data-title="{escaped_title}"
+                                    data-url="{issue.url}">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="{issue_id}"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        '''
+
                     issues_html += f"""
-                    <div class="issue severity-{issue.severity}" data-severity="{issue.severity}" style="border-left: 4px solid {color}; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                    <div class="issue severity-{issue.severity}" data-severity="{issue.severity}" data-issue-id="{issue_id}" style="border-left: 4px solid {color}; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                             <div style="flex: 1;">
                                 <strong style="color: {color};">[{issue.severity.upper()}]</strong> {issue.title}
                             </div>
-                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #666; cursor: not-allowed;" title="Auto-fix coming soon">
-                                <input type="checkbox" disabled style="cursor: not-allowed;">
-                                <span>Agent: Fix this</span>
-                            </label>
                         </div>
                         <div style="margin-top: 6px;">
                             <small style="color: #666;">URL: <a href="{issue.url}" target="_blank">{display_url}</a></small>
@@ -453,6 +494,7 @@ class ReportAggregator:
                         <div style="margin-top: 8px;">
                             <em style="color: #555; font-size: 0.9em;">💡 {issue.recommendation}</em>
                         </div>
+                        {fix_controls_html}
                     </div>
                     """
 
@@ -515,11 +557,50 @@ class ReportAggregator:
                 .code-context {{ margin: 10px 0; }}
                 .code-context pre {{ background: #1e1e1e; color: #d4d4d4; padding: 12px 15px; border-radius: 6px; overflow-x: auto; margin: 0; font-size: 0.85em; line-height: 1.4; }}
                 .code-context code {{ font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace; white-space: pre-wrap; word-break: break-word; }}
-                .fix-checkbox {{ opacity: 0.6; }}
-                .fix-checkbox:hover {{ opacity: 1; }}
+                .fix-controls {{ margin-top: 10px; border-top: 1px dashed #ddd; padding-top: 8px; }}
+                .fix-checkbox {{ cursor: pointer; display: flex; align-items: center; gap: 8px; }}
+                .fix-checkbox input {{ cursor: pointer; width: 18px; height: 18px; }}
+                .fix-checkbox:hover {{ background: #f0f0f0; }}
+                .fix-instructions {{ margin-top: 8px; }}
+                .fix-instructions.hidden {{ display: none; }}
+                .instruction-input {{
+                    width: 100%;
+                    padding: 8px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    font-size: 0.9em;
+                    resize: vertical;
+                    font-family: inherit;
+                }}
+                .run-fixes-section {{
+                    position: sticky;
+                    bottom: 0;
+                    background: white;
+                    border-top: 2px solid #333;
+                    padding: 20px;
+                    margin-top: 30px;
+                    box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+                    z-index: 100;
+                }}
+                .run-fixes-btn {{
+                    background: #28a745;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    font-size: 1.1em;
+                    border-radius: 6px;
+                    cursor: pointer;
+                }}
+                .run-fixes-btn:hover {{ background: #218838; }}
+                .run-fixes-btn:disabled {{ background: #ccc; cursor: not-allowed; }}
+                .selected-count {{ margin-left: 15px; font-size: 0.9em; color: #666; }}
+                .progress-bar {{ background: #e9ecef; height: 20px; border-radius: 4px; overflow: hidden; }}
+                .progress-fill {{ background: #28a745; height: 100%; transition: width 0.3s; }}
                 @media print {{
                     .category-issues {{ display: block !important; }}
                     h3 {{ break-after: avoid; }}
+                    .run-fixes-section {{ display: none; }}
+                    .fix-controls {{ display: none; }}
                 }}
             </style>
             <script>
@@ -589,6 +670,170 @@ class ReportAggregator:
                         }}
                     }});
                 }}
+
+                // ==================== Fix Selection JavaScript ====================
+                const selectedIssues = new Map();
+                const SCAN_ID = '{scan.id}';
+
+                function initFixControls() {{
+                    // Show/hide instruction input when checkbox changes
+                    document.querySelectorAll('.issue-fix-checkbox').forEach(checkbox => {{
+                        checkbox.addEventListener('change', function() {{
+                            const issueId = this.dataset.issueId;
+                            const issueData = {{
+                                category: this.dataset.category,
+                                severity: this.dataset.severity,
+                                title: this.dataset.title,
+                                url: this.dataset.url,
+                                instructions: ''
+                            }};
+                            const instructionDiv = this.closest('.fix-controls').querySelector('.fix-instructions');
+
+                            if (this.checked) {{
+                                instructionDiv.classList.remove('hidden');
+                                selectedIssues.set(issueId, issueData);
+                            }} else {{
+                                instructionDiv.classList.add('hidden');
+                                selectedIssues.delete(issueId);
+                            }}
+                            updateSelectedCount();
+                        }});
+                    }});
+
+                    // Track instruction text
+                    document.querySelectorAll('.instruction-input').forEach(textarea => {{
+                        textarea.addEventListener('input', function() {{
+                            const issueId = this.dataset.issueId;
+                            if (selectedIssues.has(issueId)) {{
+                                const data = selectedIssues.get(issueId);
+                                data.instructions = this.value;
+                                selectedIssues.set(issueId, data);
+                            }}
+                        }});
+                    }});
+
+                    // Select all fixable issues
+                    const selectAllCheckbox = document.getElementById('select-all-fixable');
+                    if (selectAllCheckbox) {{
+                        selectAllCheckbox.addEventListener('change', function() {{
+                            document.querySelectorAll('.issue-fix-checkbox').forEach(checkbox => {{
+                                if (checkbox.checked !== this.checked) {{
+                                    checkbox.checked = this.checked;
+                                    checkbox.dispatchEvent(new Event('change'));
+                                }}
+                            }});
+                        }});
+                    }}
+                }}
+
+                function updateSelectedCount() {{
+                    const count = selectedIssues.size;
+                    const countEl = document.getElementById('selected-count');
+                    const btn = document.getElementById('run-fixes-btn');
+                    if (countEl) countEl.textContent = `${{count}} issue${{count !== 1 ? 's' : ''}} selected`;
+                    if (btn) btn.disabled = count === 0;
+                }}
+
+                async function runFixes() {{
+                    const githubRepo = document.getElementById('github-repo')?.value || 'savaslabs/savaslabs.com';
+
+                    const issues = [];
+                    selectedIssues.forEach((data, issueId) => {{
+                        issues.push({{
+                            issue_id: issueId,
+                            category: data.category,
+                            severity: data.severity,
+                            title: data.title,
+                            url: data.url,
+                            user_instructions: data.instructions || null
+                        }});
+                    }});
+
+                    if (issues.length === 0) {{
+                        alert('Please select at least one issue to fix.');
+                        return;
+                    }}
+
+                    // Confirmation dialog
+                    const confirmMessage = `
+⚠️ CONFIRM FIX SUBMISSION ⚠️
+
+You are about to create GitHub issues/PRs for ${{issues.length}} selected issue(s).
+
+TARGET REPOSITORY: ${{githubRepo}}
+
+This will:
+• Create GitHub issues in the repository above
+• Attempt to create PRs for code fixes (if applicable)
+• NOT modify any Drupal content (not yet implemented)
+
+BEFORE PROCEEDING:
+✓ Ensure you have a backup of the target repository
+✓ Verify the target repo is correct (use POC repo for testing)
+✓ Confirm you can close/delete test issues if needed
+
+Do you want to proceed?`;
+
+                    if (!confirm(confirmMessage)) {{
+                        return;
+                    }}
+
+                    // Show progress
+                    const progressDiv = document.getElementById('fix-progress');
+                    const progressText = document.getElementById('progress-text');
+                    const progressFill = document.getElementById('progress-fill');
+                    const btn = document.getElementById('run-fixes-btn');
+
+                    if (progressDiv) progressDiv.classList.remove('hidden');
+                    if (progressText) progressText.textContent = 'Starting fix process...';
+                    if (btn) btn.disabled = true;
+
+                    try {{
+                        const response = await fetch('/api/fix', {{
+                            method: 'POST',
+                            headers: {{ 'Content-Type': 'application/json' }},
+                            body: JSON.stringify({{
+                                scan_id: SCAN_ID,
+                                issues: issues,
+                                github_repo: githubRepo,
+                                create_github_issues: true
+                            }})
+                        }});
+
+                        if (!response.ok) {{
+                            throw new Error(`HTTP ${{response.status}}: ${{await response.text()}}`);
+                        }}
+
+                        const result = await response.json();
+
+                        // Show results
+                        if (progressFill) progressFill.style.width = '100%';
+                        if (progressText) progressText.textContent = 'Complete!';
+
+                        const resultsDiv = document.getElementById('fix-results');
+                        if (resultsDiv) {{
+                            resultsDiv.classList.remove('hidden');
+                            resultsDiv.innerHTML = `
+                                <h4 style="color: #28a745; margin-top: 15px;">Fixes Initiated</h4>
+                                <ul>
+                                    <li>Fixes created: ${{result.fixes_created}}</li>
+                                    <li>GitHub issues created: ${{result.github_issues_created}}</li>
+                                    <li>Batch ID: ${{result.fix_batch_id}}</li>
+                                </ul>
+                                <p>${{result.message}}</p>
+                            `;
+                        }}
+
+                    }} catch (error) {{
+                        if (progressText) progressText.textContent = `Error: ${{error.message}}`;
+                        if (progressFill) progressFill.style.background = '#dc3545';
+                    }}
+
+                    if (btn) btn.disabled = false;
+                }}
+
+                // Initialize when DOM is ready
+                document.addEventListener('DOMContentLoaded', initFixControls);
             </script>
         </head>
         <body>
@@ -723,6 +968,36 @@ class ReportAggregator:
                     </ul>
                 </div>
             </div>
+
+            {'<div class="run-fixes-section" id="run-fixes-section">' if enable_fixes else ''}
+            {'''
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <button class="run-fixes-btn" id="run-fixes-btn" onclick="runFixes()" disabled>
+                        🔧 Run Fixes
+                    </button>
+                    <span id="selected-count" class="selected-count">0 issues selected</span>
+                    <label style="margin-left: auto; cursor: pointer;">
+                        <input type="checkbox" id="select-all-fixable">
+                        Select all fixable issues
+                    </label>
+                </div>
+                <div style="margin-top: 15px;">
+                    <label style="font-size: 0.9em; color: #666;">
+                        Target GitHub Repo:
+                        <input type="text" id="github-repo" value="savaslabs/poc-savaslabs.com"
+                            style="margin-left: 10px; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; width: 250px;">
+                    </label>
+                    <span style="margin-left: 10px; color: #fd7e14; font-size: 0.85em;">⚠️ Use POC repo for testing</span>
+                </div>
+                <div id="fix-progress" class="hidden" style="margin-top: 15px;">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <p id="progress-text" style="margin: 8px 0 0 0; font-size: 0.9em; color: #666;"></p>
+                </div>
+                <div id="fix-results" class="hidden"></div>
+            ''' if enable_fixes else ''}
+            {'</div>' if enable_fixes else ''}
 
             <hr>
             <p style="color: #666; font-size: 0.9em;">

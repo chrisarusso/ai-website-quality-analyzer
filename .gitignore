@@ -1,6 +1,9 @@
 .env
 
 # compiled bytecode files
-.pyc
 __pycache__/
 *.pyc
+
+#sqlite I think
+/data
+

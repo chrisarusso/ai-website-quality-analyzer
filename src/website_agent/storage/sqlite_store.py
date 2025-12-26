@@ -13,7 +13,16 @@ from pathlib import Path
 from typing import Optional
 
 from ..config import DATABASE_PATH, ensure_data_dir
-from ..models import Issue, PageResult, ScanResult, ScanStatus, ScanSummary
+from ..models import (
+    Issue,
+    PageResult,
+    ProposedFix,
+    ScanResult,
+    ScanStatus,
+    ScanSummary,
+    FixStatus,
+    FixType,
+)
 
 
 class SQLiteStore:
@@ -88,6 +97,38 @@ class SQLiteStore:
                 CREATE INDEX IF NOT EXISTS idx_issues_scan_id ON issues(scan_id);
                 CREATE INDEX IF NOT EXISTS idx_issues_category ON issues(category);
                 CREATE INDEX IF NOT EXISTS idx_issues_severity ON issues(severity);
+
+                -- Proposed fixes table for auto-fix feature
+                CREATE TABLE IF NOT EXISTS proposed_fixes (
+                    id TEXT PRIMARY KEY,
+                    scan_id TEXT NOT NULL,
+                    issue_id INTEGER NOT NULL,
+                    fix_type TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    target_type TEXT,
+                    target_id TEXT,
+                    target_field TEXT,
+                    original_value TEXT,
+                    proposed_value TEXT,
+                    user_instructions TEXT,
+                    confidence REAL DEFAULT 0.0,
+                    ai_generated INTEGER DEFAULT 1,
+                    github_issue_url TEXT,
+                    github_issue_number INTEGER,
+                    github_pr_url TEXT,
+                    drupal_revision_url TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT,
+                    reviewed_at TEXT,
+                    reviewed_by TEXT,
+                    error_message TEXT,
+                    FOREIGN KEY (scan_id) REFERENCES scans(id),
+                    FOREIGN KEY (issue_id) REFERENCES issues(id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_fixes_scan_id ON proposed_fixes(scan_id);
+                CREATE INDEX IF NOT EXISTS idx_fixes_status ON proposed_fixes(status);
+                CREATE INDEX IF NOT EXISTS idx_fixes_issue_id ON proposed_fixes(issue_id);
             """)
             conn.commit()
         finally:
@@ -361,9 +402,259 @@ class SQLiteStore:
         """Delete a scan and all related data."""
         conn = self._get_conn()
         try:
+            conn.execute("DELETE FROM proposed_fixes WHERE scan_id = ?", (scan_id,))
             conn.execute("DELETE FROM issues WHERE scan_id = ?", (scan_id,))
             conn.execute("DELETE FROM pages WHERE scan_id = ?", (scan_id,))
             conn.execute("DELETE FROM scans WHERE id = ?", (scan_id,))
+            conn.commit()
+        finally:
+            conn.close()
+
+    # =========================================================================
+    # Fix-related methods
+    # =========================================================================
+
+    def get_issue_by_id(self, issue_id: int) -> Optional[Issue]:
+        """Get a single issue by its database ID."""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT * FROM issues WHERE id = ?", (issue_id,)
+            ).fetchone()
+
+            if not row:
+                return None
+
+            return Issue(
+                category=row["category"],
+                severity=row["severity"],
+                title=row["title"],
+                description=row["description"] or "",
+                recommendation=row["recommendation"] or "",
+                url=row["page_url"],
+                element=row["element"],
+                context=row["context"],
+                line_number=row["line_number"],
+            )
+        finally:
+            conn.close()
+
+    def get_issues_with_ids(self, scan_id: str) -> list[dict]:
+        """Get issues with their database IDs for the fix UI."""
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                """SELECT id, scan_id, page_url, category, severity, title,
+                          description, recommendation, element, context, line_number
+                   FROM issues WHERE scan_id = ? ORDER BY severity, category""",
+                (scan_id,),
+            ).fetchall()
+
+            return [
+                {
+                    "id": row["id"],
+                    "scan_id": row["scan_id"],
+                    "url": row["page_url"],
+                    "category": row["category"],
+                    "severity": row["severity"],
+                    "title": row["title"],
+                    "description": row["description"] or "",
+                    "recommendation": row["recommendation"] or "",
+                    "element": row["element"],
+                    "context": row["context"],
+                    "line_number": row["line_number"],
+                }
+                for row in rows
+            ]
+        finally:
+            conn.close()
+
+    def create_fix(self, fix: ProposedFix) -> ProposedFix:
+        """Create a new proposed fix record."""
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                """INSERT INTO proposed_fixes
+                   (id, scan_id, issue_id, fix_type, status, target_type, target_id,
+                    target_field, original_value, proposed_value, user_instructions,
+                    confidence, ai_generated, github_issue_url, github_issue_number,
+                    github_pr_url, drupal_revision_url, created_at, updated_at,
+                    reviewed_at, reviewed_by, error_message)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    fix.id,
+                    fix.scan_id,
+                    fix.issue_id,
+                    fix.fix_type,
+                    fix.status,
+                    fix.target_type,
+                    fix.target_id,
+                    fix.target_field,
+                    fix.original_value,
+                    fix.proposed_value,
+                    fix.user_instructions,
+                    fix.confidence,
+                    1 if fix.ai_generated else 0,
+                    fix.github_issue_url,
+                    fix.github_issue_number,
+                    fix.github_pr_url,
+                    fix.drupal_revision_url,
+                    fix.created_at.isoformat(),
+                    fix.updated_at.isoformat() if fix.updated_at else None,
+                    fix.reviewed_at.isoformat() if fix.reviewed_at else None,
+                    fix.reviewed_by,
+                    fix.error_message,
+                ),
+            )
+            conn.commit()
+            return fix
+        finally:
+            conn.close()
+
+    def update_fix_status(
+        self,
+        fix_id: str,
+        status: Optional[FixStatus] = None,
+        github_issue_url: Optional[str] = None,
+        github_issue_number: Optional[int] = None,
+        github_pr_url: Optional[str] = None,
+        drupal_revision_url: Optional[str] = None,
+        proposed_value: Optional[str] = None,
+        original_value: Optional[str] = None,
+        error_message: Optional[str] = None,
+    ):
+        """Update a fix record."""
+        conn = self._get_conn()
+        try:
+            updates = ["updated_at = ?"]
+            params = [datetime.utcnow().isoformat()]
+
+            if status is not None:
+                updates.append("status = ?")
+                params.append(status.value if isinstance(status, FixStatus) else status)
+
+            if github_issue_url is not None:
+                updates.append("github_issue_url = ?")
+                params.append(github_issue_url)
+
+            if github_issue_number is not None:
+                updates.append("github_issue_number = ?")
+                params.append(github_issue_number)
+
+            if github_pr_url is not None:
+                updates.append("github_pr_url = ?")
+                params.append(github_pr_url)
+
+            if drupal_revision_url is not None:
+                updates.append("drupal_revision_url = ?")
+                params.append(drupal_revision_url)
+
+            if proposed_value is not None:
+                updates.append("proposed_value = ?")
+                params.append(proposed_value)
+
+            if original_value is not None:
+                updates.append("original_value = ?")
+                params.append(original_value)
+
+            if error_message is not None:
+                updates.append("error_message = ?")
+                params.append(error_message)
+
+            params.append(fix_id)
+            conn.execute(
+                f"UPDATE proposed_fixes SET {', '.join(updates)} WHERE id = ?",
+                params,
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_fix(self, fix_id: str) -> Optional[ProposedFix]:
+        """Get a fix by ID."""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT * FROM proposed_fixes WHERE id = ?", (fix_id,)
+            ).fetchone()
+
+            if not row:
+                return None
+
+            return self._row_to_fix(row)
+        finally:
+            conn.close()
+
+    def get_fixes_for_scan(self, scan_id: str) -> list[ProposedFix]:
+        """Get all fixes for a scan."""
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                "SELECT * FROM proposed_fixes WHERE scan_id = ? ORDER BY created_at",
+                (scan_id,),
+            ).fetchall()
+
+            return [self._row_to_fix(row) for row in rows]
+        finally:
+            conn.close()
+
+    def get_fixes_by_batch(self, batch_id: str) -> list[ProposedFix]:
+        """Get all fixes in a batch (fixes whose ID starts with the batch ID)."""
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                "SELECT * FROM proposed_fixes WHERE id LIKE ? ORDER BY created_at",
+                (f"{batch_id}-%",),
+            ).fetchall()
+
+            return [self._row_to_fix(row) for row in rows]
+        finally:
+            conn.close()
+
+    def get_pending_fixes(self) -> list[ProposedFix]:
+        """Get all pending fixes across all scans."""
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                "SELECT * FROM proposed_fixes WHERE status IN ('pending', 'processing') ORDER BY created_at",
+            ).fetchall()
+
+            return [self._row_to_fix(row) for row in rows]
+        finally:
+            conn.close()
+
+    def _row_to_fix(self, row: sqlite3.Row) -> ProposedFix:
+        """Convert a database row to a ProposedFix object."""
+        return ProposedFix(
+            id=row["id"],
+            scan_id=row["scan_id"],
+            issue_id=row["issue_id"],
+            fix_type=FixType(row["fix_type"]),
+            status=FixStatus(row["status"]),
+            target_type=row["target_type"],
+            target_id=row["target_id"],
+            target_field=row["target_field"],
+            original_value=row["original_value"],
+            proposed_value=row["proposed_value"],
+            user_instructions=row["user_instructions"],
+            confidence=row["confidence"],
+            ai_generated=bool(row["ai_generated"]),
+            github_issue_url=row["github_issue_url"],
+            github_issue_number=row["github_issue_number"],
+            github_pr_url=row["github_pr_url"],
+            drupal_revision_url=row["drupal_revision_url"],
+            created_at=datetime.fromisoformat(row["created_at"]),
+            updated_at=datetime.fromisoformat(row["updated_at"]) if row["updated_at"] else None,
+            reviewed_at=datetime.fromisoformat(row["reviewed_at"]) if row["reviewed_at"] else None,
+            reviewed_by=row["reviewed_by"],
+            error_message=row["error_message"],
+        )
+
+    def delete_fixes_for_scan(self, scan_id: str):
+        """Delete all fixes for a scan."""
+        conn = self._get_conn()
+        try:
+            conn.execute("DELETE FROM proposed_fixes WHERE scan_id = ?", (scan_id,))
             conn.commit()
         finally:
             conn.close()

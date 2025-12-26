@@ -152,6 +152,21 @@ scp -i ~/.ssh/AWS-created-nov-27-2025.pem ubuntu@3.142.219.101:/home/ubuntu/webs
 **Status:** Planning
 **Target:** POC on savaslabs.com (Drupal + GitHub)
 
+### Prerequisites (Completed 2025-12-26)
+
+**Drupal Content Moderation is now enabled on savaslabs.com:**
+- Modules installed: `workflows`, `content_moderation`
+- Editorial workflow configured with states: Draft → Needs Review → Published
+- Applied to all 14 content types
+- Agent can create draft revisions, submit for review; human approves via Drupal admin
+
+**Workflow transitions:**
+| Transition | From → To | Purpose |
+|------------|-----------|---------|
+| Submit for Review | Draft → Needs Review | Agent submits proposed fix |
+| Publish | Needs Review → Published | Human approves |
+| Request Changes | Needs Review → Draft | Human rejects, sends back |
+
 ### Overview
 
 Extend the scanner to not just detect issues but propose and apply fixes automatically, with human approval workflow.

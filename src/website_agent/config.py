@@ -35,8 +35,28 @@ DATABASE_PATH = Path(os.getenv("DATABASE_PATH", str(DATA_DIR / "website_agent.db
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8002"))
 
+# Optional HTTP Basic Auth (leave empty to disable)
+API_USERNAME = os.getenv("API_USERNAME", "")
+API_PASSWORD = os.getenv("API_PASSWORD", "")
+
+# Google OAuth configuration
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+ALLOWED_EMAIL_DOMAIN = os.getenv("ALLOWED_EMAIL_DOMAIN", "savaslabs.com")
+SESSION_SECRET_KEY = os.getenv("SESSION_SECRET_KEY", "")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8003")
+
 # Lighthouse configuration
 LIGHTHOUSE_PATH = os.getenv("LIGHTHOUSE_PATH", "lighthouse")
+
+# GitHub configuration
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_DEFAULT_REPO = os.getenv("GITHUB_DEFAULT_REPO", "savaslabs/savaslabs.com")
+
+# Drupal configuration (for content fixes)
+DRUPAL_BASE_URL = os.getenv("DRUPAL_BASE_URL", "https://savaslabs.com")
+DRUPAL_CLIENT_ID = os.getenv("DRUPAL_CLIENT_ID")
+DRUPAL_CLIENT_SECRET = os.getenv("DRUPAL_CLIENT_SECRET")
 
 # Severity weights for scoring
 SEVERITY_WEIGHTS = {

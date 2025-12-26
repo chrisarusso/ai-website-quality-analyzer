@@ -8,7 +8,22 @@
       "Bash(open:*)",
       "Bash(ssh:*)",
       "Bash(scp:*)",
-      "Bash(./run-remote.sh https://americanpackaging.com)"
+      "Bash(./run-remote.sh https://americanpackaging.com)",
+      "Bash(uv sync:*)",
+      "Bash(sqlite3:*)",
+      "Bash(ls:*)",
+      "Bash(chmod:*)",
+      "Bash(gh repo list:*)",
+      "Bash(pkill:*)",
+      "Bash(./run-api-remote.sh:*)",
+      "Bash(python3:*)",
+      "Bash(__NEW_LINE__ echo \"\")",
+      "Bash(/Users/chris/web/savas-things/AI/projects/website-quality-agent/scripts/deploy.sh:*)",
+      "Bash(terminus drush:*)",
+      "Bash(terminus site:list:*)",
+      "WebFetch(domain:developers.google.com)",
+      "WebFetch(domain:support.google.com)",
+      "Bash(terminus rsync:*)"
     ]
   }
 }
