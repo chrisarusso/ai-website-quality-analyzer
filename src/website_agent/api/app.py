@@ -213,26 +213,25 @@ async def dashboard(request: Request, auth: dict = Depends(verify_auth)):
         # Format dates
         started = scan.started_at.strftime("%Y-%m-%d %H:%M") if scan.started_at else "-"
 
-        # Calculate issue count if available
-        issue_count = scan.issues_found if scan.status == "completed" else "-"
-
-        # Score - we need to get the full scan for this
+        # Score and issue count - get from full scan summary
         score = "-"
+        issue_count = "-"
         if scan.status == "completed":
             full_scan = store.get_scan(scan.id)
             if full_scan and full_scan.summary:
                 score = f"{full_scan.summary.overall_score:.0f}"
+                issue_count = full_scan.summary.total_issues
 
         scan_rows += f"""
         <tr>
-            <td><a href="/api/scan/{scan.id}/report" class="scan-link">{scan.id}</a></td>
+            <td><a href="{PATH_PREFIX}/api/scan/{scan.id}/report" class="scan-link">{scan.id}</a></td>
             <td class="url-cell"><a href="{scan.url}" target="_blank">{scan.url}</a></td>
             <td><span class="status {status_class}">{scan.status}</span></td>
             <td>{score}</td>
             <td>{issue_count}</td>
             <td>{started}</td>
             <td>
-                <a href="/api/scan/{scan.id}/report" class="btn btn-sm">Report</a>
+                <a href="{PATH_PREFIX}/api/scan/{scan.id}/report" class="btn btn-sm">Report</a>
                 <button onclick="deleteScan('{scan.id}')" class="btn btn-sm btn-danger">Delete</button>
             </td>
         </tr>
@@ -393,7 +392,7 @@ async def dashboard(request: Request, auth: dict = Depends(verify_auth)):
             <h1>Website Quality Agent</h1>
             <div class="user-info">
                 <span class="user-email">{user_email}</span>
-                <a href="/auth/logout" class="logout-btn">Logout</a>
+                <a href="{PATH_PREFIX}/auth/logout" class="logout-btn">Logout</a>
             </div>
         </div>
 
@@ -428,6 +427,8 @@ async def dashboard(request: Request, auth: dict = Depends(verify_auth)):
         </div>
 
         <script>
+            const API_PREFIX = '{PATH_PREFIX}';
+
             async function startScan(e) {{
                 e.preventDefault();
                 const url = document.getElementById('scan-url').value;
@@ -439,7 +440,7 @@ async def dashboard(request: Request, auth: dict = Depends(verify_auth)):
                 statusDiv.style.display = 'block';
 
                 try {{
-                    const response = await fetch('/api/scan', {{
+                    const response = await fetch(API_PREFIX + '/api/scan', {{
                         method: 'POST',
                         headers: {{ 'Content-Type': 'application/json' }},
                         body: JSON.stringify({{ url: url, max_pages: maxPages }})
@@ -465,7 +466,7 @@ async def dashboard(request: Request, auth: dict = Depends(verify_auth)):
                 if (!confirm('Delete scan ' + scanId + '?')) return;
 
                 try {{
-                    const response = await fetch('/api/scan/' + scanId, {{ method: 'DELETE' }});
+                    const response = await fetch(API_PREFIX + '/api/scan/' + scanId, {{ method: 'DELETE' }});
                     if (response.ok) {{
                         location.reload();
                     }} else {{
