@@ -837,6 +837,9 @@ Do you want to proceed?`;
             </script>
         </head>
         <body>
+            <nav style="margin-bottom: 20px; padding: 10px 0; border-bottom: 1px solid #eee;">
+                <a href="/website-quality-agent/" style="color: #0066cc; text-decoration: none;">← Back to Dashboard</a>
+            </nav>
             <h1>Website Quality Report</h1>
             <p><strong>URL:</strong> <a href="{scan.url}" target="_blank">{scan.url}</a></p>
             <p><strong>Scan Date:</strong> {scan.started_at.strftime('%Y-%m-%d %H:%M:%S')}</p>
