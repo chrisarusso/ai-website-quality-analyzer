@@ -20,6 +20,18 @@ from ..models import (
     Severity,
 )
 
+# Display names for categories (defaults to uppercase if not specified)
+CATEGORY_DISPLAY_NAMES = {
+    "links": "Broken Links",
+    "seo": "SEO",
+    "cms": "CMS Security",
+}
+
+
+def get_category_display_name(category: str) -> str:
+    """Get the display name for a category."""
+    return CATEGORY_DISPLAY_NAMES.get(category, category.upper())
+
 
 @dataclass
 class SiteWideIssue:
@@ -290,11 +302,10 @@ class ReportAggregator:
         ]
 
         for cat_score in summary.category_scores:
-            if cat_score.issue_count > 0:
-                lines.append(
-                    f"  {cat_score.category.upper()}: {cat_score.score}/100 "
-                    f"({cat_score.issue_count} issues)"
-                )
+            lines.append(
+                f"  {get_category_display_name(cat_score.category)}: {cat_score.score}/100 "
+                f"({cat_score.issue_count} issues)"
+            )
 
         lines.extend([
             "",
@@ -400,7 +411,7 @@ class ReportAggregator:
                         </div>
                     </div>
                     <div style="margin-top: 6px;">
-                        <small style="color: #666;">Category: {issue.category.upper()}</small>
+                        <small style="color: #666;">Category: {get_category_display_name(issue.category)}</small>
                     </div>
                     {code_html}
                     <div style="margin-top: 8px;">
@@ -502,7 +513,7 @@ class ReportAggregator:
                 <div class="category-section" id="cat-{cat.category}">
                     <h3 onclick="toggleCategory('{cat.category}')" style="cursor: pointer; user-select: none;">
                         <span class="toggle-icon" id="icon-{cat.category}">▼</span>
-                        {cat.category.upper()} ({len(cat_issues)} issues - Score: {cat.score}/100)
+                        {get_category_display_name(cat.category)} ({len(cat_issues)} issues - Score: {cat.score}/100)
                     </h3>
                     <div class="category-issues" id="issues-{cat.category}">
                         {issues_html}
@@ -512,12 +523,21 @@ class ReportAggregator:
 
         category_summary_html = ""
         for cat in summary.category_scores:
+            # Show all categories, but only make clickable if there are issues
             if cat.issue_count > 0:
                 category_summary_html += f"""
                 <tr onclick="scrollToCategory('{cat.category}')" style="cursor: pointer;">
-                    <td>{cat.category.upper()}</td>
+                    <td>{get_category_display_name(cat.category)}</td>
                     <td>{cat.score}/100</td>
                     <td>{cat.issue_count}</td>
+                </tr>
+                """
+            else:
+                category_summary_html += f"""
+                <tr style="color: #999;">
+                    <td>{get_category_display_name(cat.category)}</td>
+                    <td>{cat.score}/100</td>
+                    <td>0 ✓</td>
                 </tr>
                 """
 

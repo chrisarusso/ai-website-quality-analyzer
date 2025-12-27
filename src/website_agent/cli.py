@@ -130,11 +130,12 @@ async def run_scan(url: str, max_pages: int) -> ScanResult:
     aggregator = ReportAggregator()
 
     # Initialize analyzers
+    # LinkAnalyzer is handled separately for async link checking
+    link_analyzer = LinkAnalyzer(check_external=True)
     analyzers = [
         SEOAnalyzer(),
         ContentAnalyzer(),
         AccessibilityAnalyzer(),
-        LinkAnalyzer(),
         PerformanceAnalyzer(),
         MobileAnalyzer(),
         ComplianceAnalyzer(),
@@ -229,6 +230,19 @@ async def run_scan(url: str, max_pages: int) -> ScanResult:
                     all_issues.extend(issues)
                 except Exception as e:
                     console.print(f"[yellow]Warning: {analyzer.__class__.__name__} failed: {e}[/yellow]")
+
+            # Run async link checking (checks actual link status codes)
+            try:
+                link_issues = await link_analyzer.analyze_async(
+                    url=result.url,
+                    html=result.html,
+                    text=result.text,
+                    soup=soup,
+                    base_url=url,
+                )
+                all_issues.extend(link_issues)
+            except Exception as e:
+                console.print(f"[yellow]Warning: LinkAnalyzer failed: {e}[/yellow]")
 
             # Extract metadata
             title = soup.find("title")

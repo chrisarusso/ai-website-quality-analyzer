@@ -172,11 +172,12 @@ fix_classifier = FixClassifier()
 fix_orchestrator = FixOrchestrator(store=store)
 
 # Analyzers
+# LinkAnalyzer is handled separately for async link checking
+link_analyzer = LinkAnalyzer(check_external=True)
 analyzers = [
     SEOAnalyzer(),
     ContentAnalyzer(),
     AccessibilityAnalyzer(),
-    LinkAnalyzer(),
     PerformanceAnalyzer(),
     MobileAnalyzer(),
     ComplianceAnalyzer(),
@@ -388,6 +389,9 @@ async def dashboard(request: Request, auth: dict = Depends(verify_auth)):
         </style>
     </head>
     <body>
+        <nav style="padding: 10px 20px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+            <a href="/" style="color: #007bff; text-decoration: none;">← Internal Tools</a>
+        </nav>
         <div class="header">
             <h1>Website Quality Agent</h1>
             <div class="user-info">
@@ -868,6 +872,19 @@ async def run_scan(scan_id: str, url: str, max_pages: int):
                     all_issues.extend(issues)
                 except Exception as e:
                     print(f"Analyzer {analyzer.__class__.__name__} failed: {e}")
+
+            # Run async link checking (checks actual link status codes)
+            try:
+                link_issues = await link_analyzer.analyze_async(
+                    url=result.url,
+                    html=result.html,
+                    text=result.text,
+                    soup=soup,
+                    base_url=url,
+                )
+                all_issues.extend(link_issues)
+            except Exception as e:
+                print(f"LinkAnalyzer failed: {e}")
 
             # Extract metadata
             title = soup.find("title")

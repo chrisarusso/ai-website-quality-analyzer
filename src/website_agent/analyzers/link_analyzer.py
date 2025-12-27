@@ -27,6 +27,26 @@ class LinkAnalyzer(BaseAnalyzer):
 
     category = IssueCategory.LINKS
 
+    # Browser-like headers to avoid bot detection
+    BROWSER_HEADERS = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    # Domains that block automated requests - collect but don't check
+    MANUAL_CHECK_DOMAINS = [
+        "twitter.com",
+        "x.com",
+        "instagram.com",
+        "facebook.com",
+        "linkedin.com",
+        "clutch.co",
+        "tiktok.com",
+        "pinterest.com",
+        "threads.net",
+    ]
+
     def __init__(self, check_external: bool = False, timeout: float = 10.0):
         """Initialize link analyzer.
 
@@ -135,6 +155,12 @@ class LinkAnalyzer(BaseAnalyzer):
 
         return issues
 
+    def _is_manual_check_domain(self, url: str) -> bool:
+        """Check if URL is from a domain that blocks automated requests."""
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower()
+        return any(d in domain for d in self.MANUAL_CHECK_DOMAINS)
+
     async def _check_links_async(
         self,
         soup: BeautifulSoup,
@@ -143,6 +169,7 @@ class LinkAnalyzer(BaseAnalyzer):
     ) -> list[Issue]:
         """Check all links on the page for status codes."""
         issues = []
+        manual_check_links = []  # Links that need manual review
 
         if base_url is None:
             parsed = urlparse(page_url)
@@ -165,11 +192,21 @@ class LinkAnalyzer(BaseAnalyzer):
             # Determine if internal or external
             is_internal = parsed.netloc == urlparse(base_url).netloc
 
+            # Check if this is a domain that blocks bots
+            if not is_internal and self._is_manual_check_domain(full_url):
+                link_text = link.get_text(strip=True)[:50]
+                manual_check_links.append((full_url, link_text, page_url))
+                continue
+
             if is_internal or self.check_external:
                 urls_to_check.append((full_url, is_internal, link.get_text(strip=True)[:50]))
 
         # Check links in parallel with rate limiting
-        async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
+        async with httpx.AsyncClient(
+            timeout=self.timeout,
+            follow_redirects=True,
+            headers=self.BROWSER_HEADERS,
+        ) as client:
             tasks = []
             for full_url, is_internal, link_text in urls_to_check:
                 # Skip if already checked
@@ -186,6 +223,21 @@ class LinkAnalyzer(BaseAnalyzer):
             for result in results:
                 if isinstance(result, Issue):
                     issues.append(result)
+
+        # Add issues for links that need manual review (bot-blocking domains)
+        for full_url, link_text, source_url in manual_check_links:
+            issues.append(self._create_issue(
+                severity=Severity.LOW,
+                title=f"Manual check needed: {full_url[:60]}",
+                description=(
+                    f"This link is to a domain that blocks automated requests "
+                    f"(social media, etc.). Please verify manually that the link works."
+                ),
+                recommendation="Open the link in a browser to verify it's not broken.",
+                url=source_url,
+                element=f'<a href="{full_url}">{link_text}</a>',
+                context="Domain blocks automated checking",
+            ))
 
         return issues
 

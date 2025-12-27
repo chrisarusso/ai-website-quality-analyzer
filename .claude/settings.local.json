@@ -23,7 +23,14 @@
       "Bash(terminus site:list:*)",
       "WebFetch(domain:developers.google.com)",
       "WebFetch(domain:support.google.com)",
-      "Bash(terminus rsync:*)"
+      "Bash(terminus rsync:*)",
+      "Bash(cat:*)",
+      "Bash(tee:*)",
+      "Bash(./scripts/deploy.sh:*)",
+      "Bash(rsync:*)",
+      "Bash(./ ubuntu@3.16.155.59:/home/ubuntu/website-quality-agent/)",
+      "Bash(/Users/chris/web/savas-things/AI/projects/website-quality-agent/ )",
+      "Bash(ubuntu@3.16.155.59:/home/ubuntu/website-quality-agent/)"
     ]
   }
 }
