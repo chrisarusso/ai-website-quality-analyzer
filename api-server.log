@@ -1000,3 +1000,43 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8003 (Press CTRL+C to quit)
 INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
 INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+   Building website-quality-agent @ file:///home/ubuntu/website-quality-agent
+      Built website-quality-agent @ file:///home/ubuntu/website-quality-agent
+Uninstalled 1 package in 3ms
+Installed 1 package in 1ms
+INFO:     Started server process [32786]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8003 (Press CTRL+C to quit)
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "POST /api/scan HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET /api/scan/03a8668d/report HTTP/1.1" 400 Bad Request
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
+INFO:     2601:645:8a84:56a0:b1bc:7b4e:134f:f10a:0 - "GET / HTTP/1.1" 200 OK
