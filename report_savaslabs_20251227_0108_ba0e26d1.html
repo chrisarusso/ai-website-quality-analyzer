@@ -1,0 +1,1603 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Website Quality Report - https://savaslabs.com/blog/omega-search-progressive-decoupling</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; line-height: 1.5; }
+                h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+                h2 { color: #444; margin-top: 30px; }
+                h3 { background: #e9ecef; padding: 12px 15px; margin: 15px 0 0 0; border-radius: 5px 5px 0 0; }
+                h3:hover { background: #dee2e6; }
+                .toggle-icon { display: inline-block; width: 20px; transition: transform 0.2s; }
+                .toggle-icon.collapsed { transform: rotate(-90deg); }
+                .score { font-size: 48px; font-weight: bold; }
+                .summary { display: flex; gap: 20px; flex-wrap: wrap; margin: 20px 0; }
+                .stat { background: #f8f9fa; padding: 15px 20px; border-radius: 8px; min-width: 120px; text-align: center; }
+                .stat strong { font-size: 24px; display: block; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+                th { background: #f8f9fa; font-weight: 600; }
+                tr:hover { background: #f8f9fa; }
+                .category-section { margin-bottom: 5px; }
+                .category-issues { background: #fff; border: 1px solid #e9ecef; border-top: none; padding: 10px; border-radius: 0 0 5px 5px; }
+                .category-issues.hidden, .hidden { display: none; }
+                .issue a { color: #0066cc; text-decoration: none; }
+                .issue a:hover { text-decoration: underline; }
+                .nav-link { color: #0066cc; cursor: pointer; }
+                .nav-link:hover { text-decoration: underline; }
+                .code-context { margin: 10px 0; }
+                .code-context pre { background: #1e1e1e; color: #d4d4d4; padding: 12px 15px; border-radius: 6px; overflow-x: auto; margin: 0; font-size: 0.85em; line-height: 1.4; }
+                .code-context code { font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace; white-space: pre-wrap; word-break: break-word; }
+                .fix-controls { margin-top: 10px; border-top: 1px dashed #ddd; padding-top: 8px; }
+                .fix-checkbox { cursor: pointer; display: flex; align-items: center; gap: 8px; }
+                .fix-checkbox input { cursor: pointer; width: 18px; height: 18px; }
+                .fix-checkbox:hover { background: #f0f0f0; }
+                .fix-instructions { margin-top: 8px; }
+                .fix-instructions.hidden { display: none; }
+                .instruction-input {
+                    width: 100%;
+                    padding: 8px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    font-size: 0.9em;
+                    resize: vertical;
+                    font-family: inherit;
+                }
+                .run-fixes-section {
+                    position: sticky;
+                    bottom: 0;
+                    background: white;
+                    border-top: 2px solid #333;
+                    padding: 20px;
+                    margin-top: 30px;
+                    box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+                    z-index: 100;
+                }
+                .run-fixes-btn {
+                    background: #28a745;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    font-size: 1.1em;
+                    border-radius: 6px;
+                    cursor: pointer;
+                }
+                .run-fixes-btn:hover { background: #218838; }
+                .run-fixes-btn:disabled { background: #ccc; cursor: not-allowed; }
+                .selected-count { margin-left: 15px; font-size: 0.9em; color: #666; }
+                .progress-bar { background: #e9ecef; height: 20px; border-radius: 4px; overflow: hidden; }
+                .progress-fill { background: #28a745; height: 100%; transition: width 0.3s; }
+                @media print {
+                    .category-issues { display: block !important; }
+                    h3 { break-after: avoid; }
+                    .run-fixes-section { display: none; }
+                    .fix-controls { display: none; }
+                }
+            </style>
+            <script>
+                function toggleCategory(category) {
+                    const issues = document.getElementById('issues-' + category);
+                    const icon = document.getElementById('icon-' + category);
+                    if (issues.classList.contains('hidden')) {
+                        issues.classList.remove('hidden');
+                        icon.classList.remove('collapsed');
+                    } else {
+                        issues.classList.add('hidden');
+                        icon.classList.add('collapsed');
+                    }
+                }
+                function scrollToCategory(category) {
+                    const section = document.getElementById('cat-' + category);
+                    const issues = document.getElementById('issues-' + category);
+                    const icon = document.getElementById('icon-' + category);
+                    if (section) {
+                        section.scrollIntoView({ behavior: 'smooth' });
+                        issues.classList.remove('hidden');
+                        icon.classList.remove('collapsed');
+                    }
+                }
+                function expandAll() {
+                    document.querySelectorAll('.category-issues').forEach(el => el.classList.remove('hidden'));
+                    document.querySelectorAll('.toggle-icon').forEach(el => el.classList.remove('collapsed'));
+                }
+                function collapseAll() {
+                    document.querySelectorAll('.category-issues').forEach(el => el.classList.add('hidden'));
+                    document.querySelectorAll('.toggle-icon').forEach(el => el.classList.add('collapsed'));
+                }
+                function togglePages() {
+                    const list = document.getElementById('pages-list');
+                    const icon = document.getElementById('icon-pages');
+                    if (list.classList.contains('hidden')) {
+                        list.classList.remove('hidden');
+                        icon.textContent = '▼';
+                    } else {
+                        list.classList.add('hidden');
+                        icon.textContent = '▶';
+                    }
+                }
+                function filterBySeverity() {
+                    const showCritical = document.getElementById('filter-critical').checked;
+                    const showHigh = document.getElementById('filter-high').checked;
+                    const showMedium = document.getElementById('filter-medium').checked;
+                    const showLow = document.getElementById('filter-low').checked;
+
+                    document.querySelectorAll('.issue').forEach(issue => {
+                        const severity = issue.dataset.severity;
+                        let show = false;
+                        if (severity === 'critical' && showCritical) show = true;
+                        if (severity === 'high' && showHigh) show = true;
+                        if (severity === 'medium' && showMedium) show = true;
+                        if (severity === 'low' && showLow) show = true;
+                        issue.style.display = show ? 'block' : 'none';
+                    });
+
+                    // Update category issue counts
+                    document.querySelectorAll('.category-section').forEach(section => {
+                        const visibleIssues = section.querySelectorAll('.issue:not([style*="display: none"])').length;
+                        const totalIssues = section.querySelectorAll('.issue').length;
+                        const countSpan = section.querySelector('.visible-count');
+                        if (countSpan) {
+                            countSpan.textContent = visibleIssues < totalIssues ? `${visibleIssues}/${totalIssues} shown` : `${totalIssues} issues`;
+                        }
+                    });
+                }
+
+                // ==================== Fix Selection JavaScript ====================
+                const selectedIssues = new Map();
+                const SCAN_ID = 'ba0e26d1';
+
+                function initFixControls() {
+                    // Show/hide instruction input when checkbox changes
+                    document.querySelectorAll('.issue-fix-checkbox').forEach(checkbox => {
+                        checkbox.addEventListener('change', function() {
+                            const issueId = this.dataset.issueId;
+                            const issueData = {
+                                category: this.dataset.category,
+                                severity: this.dataset.severity,
+                                title: this.dataset.title,
+                                url: this.dataset.url,
+                                instructions: ''
+                            };
+                            const instructionDiv = this.closest('.fix-controls').querySelector('.fix-instructions');
+
+                            if (this.checked) {
+                                instructionDiv.classList.remove('hidden');
+                                selectedIssues.set(issueId, issueData);
+                            } else {
+                                instructionDiv.classList.add('hidden');
+                                selectedIssues.delete(issueId);
+                            }
+                            updateSelectedCount();
+                        });
+                    });
+
+                    // Track instruction text
+                    document.querySelectorAll('.instruction-input').forEach(textarea => {
+                        textarea.addEventListener('input', function() {
+                            const issueId = this.dataset.issueId;
+                            if (selectedIssues.has(issueId)) {
+                                const data = selectedIssues.get(issueId);
+                                data.instructions = this.value;
+                                selectedIssues.set(issueId, data);
+                            }
+                        });
+                    });
+
+                    // Select all fixable issues
+                    const selectAllCheckbox = document.getElementById('select-all-fixable');
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.addEventListener('change', function() {
+                            document.querySelectorAll('.issue-fix-checkbox').forEach(checkbox => {
+                                if (checkbox.checked !== this.checked) {
+                                    checkbox.checked = this.checked;
+                                    checkbox.dispatchEvent(new Event('change'));
+                                }
+                            });
+                        });
+                    }
+                }
+
+                function updateSelectedCount() {
+                    const count = selectedIssues.size;
+                    const countEl = document.getElementById('selected-count');
+                    const btn = document.getElementById('run-fixes-btn');
+                    if (countEl) countEl.textContent = `${count} issue${count !== 1 ? 's' : ''} selected`;
+                    if (btn) btn.disabled = count === 0;
+                }
+
+                async function runFixes() {
+                    const githubRepo = document.getElementById('github-repo')?.value || 'savaslabs/savaslabs.com';
+
+                    const issues = [];
+                    selectedIssues.forEach((data, issueId) => {
+                        issues.push({
+                            issue_id: issueId,
+                            category: data.category,
+                            severity: data.severity,
+                            title: data.title,
+                            url: data.url,
+                            user_instructions: data.instructions || null
+                        });
+                    });
+
+                    if (issues.length === 0) {
+                        alert('Please select at least one issue to fix.');
+                        return;
+                    }
+
+                    // Confirmation dialog
+                    const confirmMessage = `
+⚠️ CONFIRM FIX SUBMISSION ⚠️
+
+You are about to create GitHub issues/PRs for ${issues.length} selected issue(s).
+
+TARGET REPOSITORY: ${githubRepo}
+
+This will:
+• Create GitHub issues in the repository above
+• Attempt to create PRs for code fixes (if applicable)
+• NOT modify any Drupal content (not yet implemented)
+
+BEFORE PROCEEDING:
+✓ Ensure you have a backup of the target repository
+✓ Verify the target repo is correct (use POC repo for testing)
+✓ Confirm you can close/delete test issues if needed
+
+Do you want to proceed?`;
+
+                    if (!confirm(confirmMessage)) {
+                        return;
+                    }
+
+                    // Show progress
+                    const progressDiv = document.getElementById('fix-progress');
+                    const progressText = document.getElementById('progress-text');
+                    const progressFill = document.getElementById('progress-fill');
+                    const btn = document.getElementById('run-fixes-btn');
+
+                    if (progressDiv) progressDiv.classList.remove('hidden');
+                    if (progressText) progressText.textContent = 'Starting fix process...';
+                    if (btn) btn.disabled = true;
+
+                    try {
+                        const response = await fetch('/api/fix', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                scan_id: SCAN_ID,
+                                issues: issues,
+                                github_repo: githubRepo,
+                                create_github_issues: true
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                        }
+
+                        const result = await response.json();
+
+                        // Show results
+                        if (progressFill) progressFill.style.width = '100%';
+                        if (progressText) progressText.textContent = 'Complete!';
+
+                        const resultsDiv = document.getElementById('fix-results');
+                        if (resultsDiv) {
+                            resultsDiv.classList.remove('hidden');
+                            resultsDiv.innerHTML = `
+                                <h4 style="color: #28a745; margin-top: 15px;">Fixes Initiated</h4>
+                                <ul>
+                                    <li>Fixes created: ${result.fixes_created}</li>
+                                    <li>GitHub issues created: ${result.github_issues_created}</li>
+                                    <li>Batch ID: ${result.fix_batch_id}</li>
+                                </ul>
+                                <p>${result.message}</p>
+                            `;
+                        }
+
+                    } catch (error) {
+                        if (progressText) progressText.textContent = `Error: ${error.message}`;
+                        if (progressFill) progressFill.style.background = '#dc3545';
+                    }
+
+                    if (btn) btn.disabled = false;
+                }
+
+                // Initialize when DOM is ready
+                document.addEventListener('DOMContentLoaded', initFixControls);
+            </script>
+        </head>
+        <body>
+            <nav style="margin-bottom: 20px; padding: 10px 0; border-bottom: 1px solid #eee;">
+                <a href="/website-quality-agent/" style="color: #0066cc; text-decoration: none;">← Back to Dashboard</a>
+            </nav>
+            <h1>Website Quality Report</h1>
+            <p><strong>URL:</strong> <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></p>
+            <p><strong>Scan Date:</strong> 2025-12-27 01:08:32</p>
+            <p><strong>Duration:</strong> 18.3s</p>
+
+            <h2>Overall Score</h2>
+            <div class="score" style="color: #dc3545;">11.4/100</div>
+
+            <h2>Summary</h2>
+            <div class="summary">
+                <div class="stat"><strong>1</strong>Pages Analyzed</div>
+                <div class="stat"><strong>26</strong>Total Issues</div>
+                <div class="stat" style="color: #dc3545;"><strong>0</strong>Critical</div>
+                <div class="stat" style="color: #fd7e14;"><strong>6</strong>High</div>
+                <div class="stat" style="color: #ffc107;"><strong>9</strong>Medium</div>
+                <div class="stat" style="color: #6c757d;"><strong>11</strong>Low</div>
+            </div>
+
+            <h2>Scores by Category</h2>
+            <p><em>Click a category to jump to its issues</em></p>
+            <table>
+                <tr><th>Category</th><th>Score</th><th>Issues</th></tr>
+                
+                <tr onclick="scrollToCategory('seo')" style="cursor: pointer;">
+                    <td>SEO</td>
+                    <td>68.3/100</td>
+                    <td>2</td>
+                </tr>
+                
+                <tr onclick="scrollToCategory('spelling')" style="cursor: pointer;">
+                    <td>SPELLING</td>
+                    <td>43.9/100</td>
+                    <td>3</td>
+                </tr>
+                
+                <tr onclick="scrollToCategory('grammar')" style="cursor: pointer;">
+                    <td>GRAMMAR</td>
+                    <td>53.6/100</td>
+                    <td>2</td>
+                </tr>
+                
+                <tr onclick="scrollToCategory('formatting')" style="cursor: pointer;">
+                    <td>FORMATTING</td>
+                    <td>48.3/100</td>
+                    <td>5</td>
+                </tr>
+                
+                <tr onclick="scrollToCategory('accessibility')" style="cursor: pointer;">
+                    <td>ACCESSIBILITY</td>
+                    <td>0.9/100</td>
+                    <td>6</td>
+                </tr>
+                
+                <tr style="color: #999;">
+                    <td>Broken Links</td>
+                    <td>100.0/100</td>
+                    <td>0 ✓</td>
+                </tr>
+                
+                <tr onclick="scrollToCategory('compliance')" style="cursor: pointer;">
+                    <td>COMPLIANCE</td>
+                    <td>48.3/100</td>
+                    <td>3</td>
+                </tr>
+                
+                <tr onclick="scrollToCategory('performance')" style="cursor: pointer;">
+                    <td>PERFORMANCE</td>
+                    <td>60.0/100</td>
+                    <td>2</td>
+                </tr>
+                
+                <tr onclick="scrollToCategory('mobile')" style="cursor: pointer;">
+                    <td>MOBILE</td>
+                    <td>80.0/100</td>
+                    <td>1</td>
+                </tr>
+                
+                <tr onclick="scrollToCategory('security')" style="cursor: pointer;">
+                    <td>SECURITY</td>
+                    <td>60.0/100</td>
+                    <td>2</td>
+                </tr>
+                
+            </table>
+
+            <h2 onclick="togglePages()" style="cursor: pointer; user-select: none;">
+                <span class="toggle-icon" id="icon-pages">▶</span>
+                Pages Crawled (1 URLs)
+            </h2>
+            <div id="pages-list" class="pages-list hidden" style="background: #fff; border: 1px solid #e9ecef; padding: 15px; border-radius: 5px; max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+                
+            <div style="padding: 6px 0; border-bottom: 1px solid #eee; font-size: 0.9em;">
+                <span style="color: #666; width: 40px; display: inline-block;">1.</span>
+                ✅
+                <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank" style="color: #0066cc; text-decoration: none;">https://savaslabs.com/blog/omega-search-progressive-decoupling</a>
+                <span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.8em; margin-left: 8px;">26</span>
+            </div>
+            
+            </div>
+
+            
+
+            <h2>Per-Page Issues by Category</h2>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <strong>Filter by Severity:</strong>
+                <label style="margin-left: 15px; cursor: pointer;">
+                    <input type="checkbox" id="filter-critical" checked onchange="filterBySeverity()">
+                    <span style="color: #dc3545;">Critical</span>
+                </label>
+                <label style="margin-left: 15px; cursor: pointer;">
+                    <input type="checkbox" id="filter-high" checked onchange="filterBySeverity()">
+                    <span style="color: #fd7e14;">High</span>
+                </label>
+                <label style="margin-left: 15px; cursor: pointer;">
+                    <input type="checkbox" id="filter-medium" checked onchange="filterBySeverity()">
+                    <span style="color: #ffc107;">Medium</span>
+                </label>
+                <label style="margin-left: 15px; cursor: pointer;">
+                    <input type="checkbox" id="filter-low" onchange="filterBySeverity()">
+                    <span style="color: #6c757d;">Low</span>
+                </label>
+                <span style="margin-left: 20px; color: #666;">|</span>
+                <span class="nav-link" onclick="expandAll()" style="margin-left: 15px;">Expand All</span>
+                <span style="color: #666;">|</span>
+                <span class="nav-link" onclick="collapseAll()">Collapse All</span>
+            </div>
+            
+                <div class="category-section" id="cat-seo">
+                    <h3 onclick="toggleCategory('seo')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-seo">▼</span>
+                        SEO (2 issues - Score: 68.3/100)
+                    </h3>
+                    <div class="category-issues" id="issues-seo">
+                        
+                    <div class="issue severity-low" data-severity="low" data-issue-id="issue-1-8a57d408" style="border-left: 4px solid #6c757d; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #6c757d;">[LOW]</strong> Incomplete Open Graph tags
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Add the missing Open Graph tags for better social media previews.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-1-8a57d408"
+                                    data-category="seo"
+                                    data-severity="low"
+                                    data-title="Incomplete Open Graph tags"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-1-8a57d408"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-low" data-severity="low" data-issue-id="issue-2-878eda08" style="border-left: 4px solid #6c757d; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #6c757d;">[LOW]</strong> No structured data found
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Add schema.org structured data to help search engines understand your content.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-2-878eda08"
+                                    data-category="seo"
+                                    data-severity="low"
+                                    data-title="No structured data found"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-2-878eda08"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    </div>
+                </div>
+                
+                <div class="category-section" id="cat-spelling">
+                    <h3 onclick="toggleCategory('spelling')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-spelling">▼</span>
+                        SPELLING (3 issues - Score: 43.9/100)
+                    </h3>
+                    <div class="category-issues" id="issues-spelling">
+                        
+                    <div class="issue severity-medium" data-severity="medium" data-issue-id="issue-3-94f9ef02" style="border-left: 4px solid #ffc107; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffc107;">[MEDIUM]</strong> Spelling error: 'containter'
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>&quot;containter&quot; → &quot;container&quot;
+
+Context:
+&quot;The div with id &#x27;js-solr-serach&#x27; has a class &#x27;containter&#x27; which is a misspelling. The correct term should be &#x27;container&#x27;.&quot;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Change to: container</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-3-94f9ef02"
+                                    data-category="spelling"
+                                    data-severity="medium"
+                                    data-title="Spelling error: &#x27;containter&#x27;"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-3-94f9ef02"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-medium" data-severity="medium" data-issue-id="issue-4-780610d3" style="border-left: 4px solid #ffc107; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffc107;">[MEDIUM]</strong> Spelling error: 'panth'
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>&quot;panth&quot; → &quot;path&quot;
+
+Context:
+&quot;In the function, the variable &#x27;$current_panth&#x27; is misspelled. It should be &#x27;$current_path&#x27;.&quot;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Change to: path</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-4-780610d3"
+                                    data-category="spelling"
+                                    data-severity="medium"
+                                    data-title="Spelling error: &#x27;panth&#x27;"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-4-780610d3"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-medium" data-severity="medium" data-issue-id="issue-5-f33a2f93" style="border-left: 4px solid #ffc107; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffc107;">[MEDIUM]</strong> Spelling error: 'serach'
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>&quot;serach&quot; → &quot;search&quot;
+
+Context:
+&quot;The div with id &#x27;js-solr-serach&#x27; contains a misspelled word. It should be &#x27;js-solr-search&#x27;.&quot;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Change to: search</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-5-f33a2f93"
+                                    data-category="spelling"
+                                    data-severity="medium"
+                                    data-title="Spelling error: &#x27;serach&#x27;"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-5-f33a2f93"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    </div>
+                </div>
+                
+                <div class="category-section" id="cat-grammar">
+                    <h3 onclick="toggleCategory('grammar')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-grammar">▼</span>
+                        GRAMMAR (2 issues - Score: 53.6/100)
+                    </h3>
+                    <div class="category-issues" id="issues-grammar">
+                        
+                    <div class="issue severity-medium" data-severity="medium" data-issue-id="issue-6-87264345" style="border-left: 4px solid #ffc107; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffc107;">[MEDIUM]</strong> Grammar issue: Inconsistent use of quotation marks
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>Original: &quot;Equally as important, Omega wished to “future proof” search development as they look forward to an eventual Drupal upgrade.&quot;
+Suggested: &quot;Equally as important, Omega wished to &#x27;future proof&#x27; search development as they looked forward to an eventual Drupal upgrade.&quot;
+
+Context:
+&quot;The quotation marks around &#x27;future proof&#x27; should be consistent with the rest of the text, which uses single quotes.&quot;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Equally as important, Omega wished to 'future proof' search development as they looked forward to an eventual Drupal upgrade.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-6-87264345"
+                                    data-category="grammar"
+                                    data-severity="medium"
+                                    data-title="Grammar issue: Inconsistent use of quotation marks"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-6-87264345"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-medium" data-severity="medium" data-issue-id="issue-7-06579180" style="border-left: 4px solid #ffc107; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffc107;">[MEDIUM]</strong> Grammar issue: Incorrect verb tense
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>Original: &quot;This old search is slow, there is no immediate refresh or &#x27;show more&#x27;.&quot;
+Suggested: &quot;This old search was slow; there was no immediate refresh or &#x27;show more&#x27;.&quot;
+
+Context:
+&quot;The description of the old search experience should be in the past tense to maintain consistency with the previous statements.&quot;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 This old search was slow; there was no immediate refresh or 'show more'.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-7-06579180"
+                                    data-category="grammar"
+                                    data-severity="medium"
+                                    data-title="Grammar issue: Incorrect verb tense"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-7-06579180"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    </div>
+                </div>
+                
+                <div class="category-section" id="cat-formatting">
+                    <h3 onclick="toggleCategory('formatting')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-formatting">▼</span>
+                        FORMATTING (5 issues - Score: 48.3/100)
+                    </h3>
+                    <div class="category-issues" id="issues-formatting">
+                        
+                    <div class="issue severity-low" data-severity="low" data-issue-id="issue-8-59590a10" style="border-left: 4px solid #6c757d; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #6c757d;">[LOW]</strong> Formatting issue: Extra space in array keys
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>Original: &quot;&#x27; topics &#x27;&quot;
+Suggested: &quot;&#x27;topics&#x27;&quot;
+
+Context:
+&quot;In the array passed to drupal_add_js, there are unnecessary spaces around the keys, which should be removed for consistency.&quot;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 'topics'</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-8-59590a10"
+                                    data-category="formatting"
+                                    data-severity="low"
+                                    data-title="Formatting issue: Extra space in array keys"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-8-59590a10"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-low" data-severity="low" data-issue-id="issue-9-84409fef" style="border-left: 4px solid #6c757d; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #6c757d;">[LOW]</strong> Formatting issue: Incorrect HTML attribute syntax
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>Original: &quot;div class-&#x27;container&#x27;&quot;
+Suggested: &quot;div class=&#x27;container&#x27;&quot;
+
+Context:
+&quot;In the HTML structure, the class attribute is incorrectly formatted, which can lead to rendering issues.&quot;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 div class='container'</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-9-84409fef"
+                                    data-category="formatting"
+                                    data-severity="low"
+                                    data-title="Formatting issue: Incorrect HTML attribute syntax"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-9-84409fef"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-low" data-severity="low" data-issue-id="issue-10-5f422c06" style="border-left: 4px solid #6c757d; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #6c757d;">[LOW]</strong> Formatting issue: Incorrect function call syntax
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>Original: &quot;data: Drupal_get_path ( type: &#x27; module &#x27; , name: &#x27; omega_solr &#x27; )&quot;
+Suggested: &quot;data: Drupal::getPath(&#x27;module&#x27;, &#x27;omega_solr&#x27;)&quot;
+
+Context:
+&quot;The function call syntax is incorrect and should follow the proper PHP method calling conventions.&quot;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 data: Drupal::getPath('module', 'omega_solr')</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-10-5f422c06"
+                                    data-category="formatting"
+                                    data-severity="low"
+                                    data-title="Formatting issue: Incorrect function call syntax"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-10-5f422c06"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-low" data-severity="low" data-issue-id="issue-11-5f83dcfa" style="border-left: 4px solid #6c757d; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #6c757d;">[LOW]</strong> Formatting issue: Incorrect use of colon in options
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>Original: &quot;options: &#x27; setting&#x27;&quot;
+Suggested: &quot;&#x27;setting&#x27;&quot;
+
+Context:
+&quot;The options parameter in drupal_add_js should not use a colon; it should be a simple string.&quot;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 'setting'</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-11-5f83dcfa"
+                                    data-category="formatting"
+                                    data-severity="low"
+                                    data-title="Formatting issue: Incorrect use of colon in options"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-11-5f83dcfa"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-low" data-severity="low" data-issue-id="issue-12-261be997" style="border-left: 4px solid #6c757d; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #6c757d;">[LOW]</strong> Formatting issue: Missing closing tag for paragraph
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>Original: &quot;&lt;p&gt;Sorry, you must enable JavaScript to use the search page.&lt;p&gt;&quot;
+Suggested: &quot;&lt;p&gt;Sorry, you must enable JavaScript to use the search page.&lt;/p&gt;&quot;
+
+Context:
+&quot;The paragraph tag is not properly closed, which can cause issues in HTML rendering.&quot;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 <p>Sorry, you must enable JavaScript to use the search page.</p></em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-12-261be997"
+                                    data-category="formatting"
+                                    data-severity="low"
+                                    data-title="Formatting issue: Missing closing tag for paragraph"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-12-261be997"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    </div>
+                </div>
+                
+                <div class="category-section" id="cat-accessibility">
+                    <h3 onclick="toggleCategory('accessibility')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-accessibility">▼</span>
+                        ACCESSIBILITY (6 issues - Score: 0.9/100)
+                    </h3>
+                    <div class="category-issues" id="issues-accessibility">
+                        
+                    <div class="issue severity-high" data-severity="high" data-issue-id="issue-13-4ba4d43e" style="border-left: 4px solid #fd7e14; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #fd7e14;">[HIGH]</strong> Empty link text
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>&gt;&gt;&gt; &lt;a class=&quot;social-profile social-profile--alternate&quot; href=&quot;https://www.drupal.org/savas-labs&quot;&gt;&lt;/a&gt; &lt;&lt;&lt;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Add descriptive text or aria-label to the link.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-13-4ba4d43e"
+                                    data-category="accessibility"
+                                    data-severity="high"
+                                    data-title="Empty link text"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-13-4ba4d43e"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-high" data-severity="high" data-issue-id="issue-14-4ba4d43e" style="border-left: 4px solid #fd7e14; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #fd7e14;">[HIGH]</strong> Empty link text
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>&gt;&gt;&gt; &lt;a class=&quot;social-profile social-profile--alternate&quot; href=&quot;https://instagram.com/savaslabs&quot;&gt;&lt;/a&gt; &lt;&lt;&lt;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Add descriptive text or aria-label to the link.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-14-4ba4d43e"
+                                    data-category="accessibility"
+                                    data-severity="high"
+                                    data-title="Empty link text"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-14-4ba4d43e"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-high" data-severity="high" data-issue-id="issue-15-4ba4d43e" style="border-left: 4px solid #fd7e14; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #fd7e14;">[HIGH]</strong> Empty link text
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>&gt;&gt;&gt; &lt;a class=&quot;social-profile social-profile--alternate&quot; href=&quot;https://twitter.com/savaslabs&quot;&gt;&lt;/a&gt; &lt;&lt;&lt;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Add descriptive text or aria-label to the link.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-15-4ba4d43e"
+                                    data-category="accessibility"
+                                    data-severity="high"
+                                    data-title="Empty link text"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-15-4ba4d43e"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-high" data-severity="high" data-issue-id="issue-16-4ba4d43e" style="border-left: 4px solid #fd7e14; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #fd7e14;">[HIGH]</strong> Empty link text
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>&gt;&gt;&gt; &lt;a class=&quot;social-profile social-profile--alternate&quot; href=&quot;https://linkedin.com/company/savas-labs&quot;&gt;&lt;/a&gt; &lt;&lt;&lt;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Add descriptive text or aria-label to the link.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-16-4ba4d43e"
+                                    data-category="accessibility"
+                                    data-severity="high"
+                                    data-title="Empty link text"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-16-4ba4d43e"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-high" data-severity="high" data-issue-id="issue-17-4ba4d43e" style="border-left: 4px solid #fd7e14; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #fd7e14;">[HIGH]</strong> Empty link text
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>&gt;&gt;&gt; &lt;a class=&quot;social-profile social-profile--alternate&quot; href=&quot;https://github.com/savaslabs&quot;&gt;&lt;/a&gt; &lt;&lt;&lt;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Add descriptive text or aria-label to the link.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-17-4ba4d43e"
+                                    data-category="accessibility"
+                                    data-severity="high"
+                                    data-title="Empty link text"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-17-4ba4d43e"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-high" data-severity="high" data-issue-id="issue-18-4ba4d43e" style="border-left: 4px solid #fd7e14; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #fd7e14;">[HIGH]</strong> Empty link text
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>&gt;&gt;&gt; &lt;a class=&quot;social-profile social-profile--alternate&quot; href=&quot;https://clutch.co/profile/savas-labs&quot;&gt;&lt;/a&gt; &lt;&lt;&lt;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Add descriptive text or aria-label to the link.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-18-4ba4d43e"
+                                    data-category="accessibility"
+                                    data-severity="high"
+                                    data-title="Empty link text"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-18-4ba4d43e"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    </div>
+                </div>
+                
+                <div class="category-section" id="cat-compliance">
+                    <h3 onclick="toggleCategory('compliance')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-compliance">▼</span>
+                        COMPLIANCE (3 issues - Score: 48.3/100)
+                    </h3>
+                    <div class="category-issues" id="issues-compliance">
+                        
+                    <div class="issue severity-medium" data-severity="medium" data-issue-id="issue-19-419076f7" style="border-left: 4px solid #ffc107; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffc107;">[MEDIUM]</strong> No cookie consent mechanism detected
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Implement a cookie consent banner for GDPR/CCPA compliance.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-19-419076f7"
+                                    data-category="compliance"
+                                    data-severity="medium"
+                                    data-title="No cookie consent mechanism detected"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-19-419076f7"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-medium" data-severity="medium" data-issue-id="issue-20-14ce0616" style="border-left: 4px solid #ffc107; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffc107;">[MEDIUM]</strong> Third-party tracking detected (7 services)
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Ensure tracking is disclosed in privacy policy and consent obtained.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-20-14ce0616"
+                                    data-category="compliance"
+                                    data-severity="medium"
+                                    data-title="Third-party tracking detected (7 services)"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-20-14ce0616"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-low" data-severity="low" data-issue-id="issue-21-3397358e" style="border-left: 4px solid #6c757d; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #6c757d;">[LOW]</strong> No accessibility statement found
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Consider adding an accessibility statement for WCAG compliance transparency.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-21-3397358e"
+                                    data-category="compliance"
+                                    data-severity="low"
+                                    data-title="No accessibility statement found"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-21-3397358e"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    </div>
+                </div>
+                
+                <div class="category-section" id="cat-performance">
+                    <h3 onclick="toggleCategory('performance')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-performance">▼</span>
+                        PERFORMANCE (2 issues - Score: 60.0/100)
+                    </h3>
+                    <div class="category-issues" id="issues-performance">
+                        
+                    <div class="issue severity-medium" data-severity="medium" data-issue-id="issue-22-53557abf" style="border-left: 4px solid #ffc107; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffc107;">[MEDIUM]</strong> 9 render-blocking scripts
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Add async or defer attribute to scripts, or move them to end of body.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-22-53557abf"
+                                    data-category="performance"
+                                    data-severity="medium"
+                                    data-title="9 render-blocking scripts"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-22-53557abf"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-low" data-severity="low" data-issue-id="issue-23-39347872" style="border-left: 4px solid #6c757d; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #6c757d;">[LOW]</strong> 6 stylesheets may block rendering
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Consider inlining critical CSS and loading non-critical styles async.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-23-39347872"
+                                    data-category="performance"
+                                    data-severity="low"
+                                    data-title="6 stylesheets may block rendering"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-23-39347872"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    </div>
+                </div>
+                
+                <div class="category-section" id="cat-mobile">
+                    <h3 onclick="toggleCategory('mobile')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-mobile">▼</span>
+                        MOBILE (1 issues - Score: 80.0/100)
+                    </h3>
+                    <div class="category-issues" id="issues-mobile">
+                        
+                    <div class="issue severity-low" data-severity="low" data-issue-id="issue-24-1c0f17b3" style="border-left: 4px solid #6c757d; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #6c757d;">[LOW]</strong> No responsive images (srcset)
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Use srcset to serve appropriately sized images for different screens.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-24-1c0f17b3"
+                                    data-category="mobile"
+                                    data-severity="low"
+                                    data-title="No responsive images (srcset)"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-24-1c0f17b3"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    </div>
+                </div>
+                
+                <div class="category-section" id="cat-security">
+                    <h3 onclick="toggleCategory('security')" style="cursor: pointer; user-select: none;">
+                        <span class="toggle-icon" id="icon-security">▼</span>
+                        SECURITY (2 issues - Score: 60.0/100)
+                    </h3>
+                    <div class="category-issues" id="issues-security">
+                        
+                    <div class="issue severity-medium" data-severity="medium" data-issue-id="issue-25-7759d77a" style="border-left: 4px solid #ffc107; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffc107;">[MEDIUM]</strong> Drupal version exposed: 10
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Hide CMS version to reduce attack surface. Update to latest version.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-25-7759d77a"
+                                    data-category="security"
+                                    data-severity="medium"
+                                    data-title="Drupal version exposed: 10"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-25-7759d77a"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="issue severity-low" data-severity="low" data-issue-id="issue-26-8fb3cac1" style="border-left: 4px solid #6c757d; padding: 12px 15px; margin: 8px 0; background: #f8f9fa; border-radius: 0 4px 4px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #6c757d;">[LOW]</strong> Generator meta tag exposes CMS
+                            </div>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <small style="color: #666;">URL: <a href="https://savaslabs.com/blog/omega-search-progressive-decoupling" target="_blank">https://savaslabs.com/blog/omega-search-progressive-decoupling</a></small>
+                        </div>
+                        
+                        <div class="code-context">
+                            <pre><code>&lt;meta name=&quot;generator&quot; content=&quot;Drupal 10 (https://www.drupal.org)&quot;&gt;</code></pre>
+                        </div>
+                        
+                        <div style="margin-top: 8px;">
+                            <em style="color: #555; font-size: 0.9em;">💡 Remove or obscure the generator meta tag.</em>
+                        </div>
+                        
+                        <div class="fix-controls">
+                            <label class="fix-checkbox" style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #333; cursor: pointer;">
+                                <input type="checkbox" class="issue-fix-checkbox"
+                                    data-issue-id="issue-26-8fb3cac1"
+                                    data-category="security"
+                                    data-severity="low"
+                                    data-title="Generator meta tag exposes CMS"
+                                    data-url="https://savaslabs.com/blog/omega-search-progressive-decoupling">
+                                <span>🔧 Select for auto-fix</span>
+                            </label>
+                            <div class="fix-instructions hidden">
+                                <textarea class="instruction-input" data-issue-id="issue-26-8fb3cac1"
+                                    placeholder="Optional: Add context or instructions for the fix agent..."
+                                    rows="2" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    </div>
+                </div>
+                
+
+            <hr style="margin-top: 40px;">
+
+            <h2>Why These Issues Matter</h2>
+            <p style="color: #666; margin-bottom: 15px;">Reference links explaining the importance of each issue type:</p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin-top: 0; color: #333;">SEO Issues</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">
+                        <li><a href="https://developers.google.com/search/docs/fundamentals/seo-starter-guide" target="_blank">Google SEO Starter Guide</a></li>
+                        <li><a href="https://developers.google.com/search/docs/appearance/title-link" target="_blank">Title Tags Best Practices</a></li>
+                        <li><a href="https://developers.google.com/search/docs/appearance/snippet" target="_blank">Meta Descriptions Guide</a></li>
+                        <li><a href="https://web.dev/articles/headings-and-landmarks" target="_blank">Heading Structure (H1-H6)</a></li>
+                        <li><a href="https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls" target="_blank">Canonical URLs</a></li>
+                        <li><a href="https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data" target="_blank">Structured Data (Schema.org)</a></li>
+                    </ul>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin-top: 0; color: #333;">Accessibility (WCAG)</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">
+                        <li><a href="https://www.w3.org/WAI/WCAG21/quickref/" target="_blank">WCAG 2.1 Quick Reference</a></li>
+                        <li><a href="https://www.w3.org/WAI/tutorials/images/" target="_blank">Image Alt Text Guide</a></li>
+                        <li><a href="https://www.w3.org/WAI/tutorials/forms/labels/" target="_blank">Form Labels Best Practices</a></li>
+                        <li><a href="https://www.w3.org/WAI/WCAG21/Understanding/link-purpose-in-context" target="_blank">Link Text Requirements</a></li>
+                        <li><a href="https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships" target="_blank">Heading Hierarchy</a></li>
+                        <li><a href="https://www.w3.org/WAI/WCAG21/Understanding/language-of-page" target="_blank">Language Declaration</a></li>
+                    </ul>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin-top: 0; color: #333;">Performance</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">
+                        <li><a href="https://web.dev/articles/vitals" target="_blank">Core Web Vitals</a></li>
+                        <li><a href="https://web.dev/articles/optimize-lcp" target="_blank">Largest Contentful Paint (LCP)</a></li>
+                        <li><a href="https://web.dev/articles/cls" target="_blank">Cumulative Layout Shift (CLS)</a></li>
+                        <li><a href="https://web.dev/articles/render-blocking-resources" target="_blank">Render-Blocking Resources</a></li>
+                        <li><a href="https://web.dev/articles/browser-level-image-lazy-loading" target="_blank">Image Lazy Loading</a></li>
+                    </ul>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin-top: 0; color: #333;">Compliance & Security</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">
+                        <li><a href="https://gdpr.eu/cookies/" target="_blank">GDPR Cookie Requirements</a></li>
+                        <li><a href="https://oag.ca.gov/privacy/ccpa" target="_blank">CCPA Compliance Guide</a></li>
+                        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP" target="_blank">Content Security Policy</a></li>
+                        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security" target="_blank">HTTPS/HSTS Security</a></li>
+                    </ul>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin-top: 0; color: #333;">Mobile & Responsive</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">
+                        <li><a href="https://developers.google.com/search/docs/crawling-indexing/mobile/mobile-sites-mobile-first-indexing" target="_blank">Mobile-First Indexing</a></li>
+                        <li><a href="https://web.dev/articles/responsive-web-design-basics" target="_blank">Responsive Web Design</a></li>
+                        <li><a href="https://web.dev/articles/accessible-tap-targets" target="_blank">Touch Target Sizes</a></li>
+                        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Viewport_meta_tag" target="_blank">Viewport Meta Tag</a></li>
+                    </ul>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin-top: 0; color: #333;">Content Quality</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">
+                        <li><a href="https://developers.google.com/search/docs/fundamentals/creating-helpful-content" target="_blank">Google's Helpful Content</a></li>
+                        <li><a href="https://www.nngroup.com/articles/writing-for-the-web/" target="_blank">Writing for the Web (NN Group)</a></li>
+                        <li><a href="https://www.w3.org/WAI/WCAG21/Understanding/reading-level" target="_blank">Readability Requirements</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="run-fixes-section" id="run-fixes-section">
+            
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <button class="run-fixes-btn" id="run-fixes-btn" onclick="runFixes()" disabled>
+                        🔧 Run Fixes
+                    </button>
+                    <span id="selected-count" class="selected-count">0 issues selected</span>
+                    <label style="margin-left: auto; cursor: pointer;">
+                        <input type="checkbox" id="select-all-fixable">
+                        Select all fixable issues
+                    </label>
+                </div>
+                <div style="margin-top: 15px;">
+                    <label style="font-size: 0.9em; color: #666;">
+                        Target GitHub Repo:
+                        <input type="text" id="github-repo" value="savaslabs/poc-savaslabs.com"
+                            style="margin-left: 10px; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; width: 250px;">
+                    </label>
+                    <span style="margin-left: 10px; color: #fd7e14; font-size: 0.85em;">⚠️ Use POC repo for testing</span>
+                </div>
+                <div id="fix-progress" class="hidden" style="margin-top: 15px;">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <p id="progress-text" style="margin: 8px 0 0 0; font-size: 0.9em; color: #666;"></p>
+                </div>
+                <div id="fix-results" class="hidden"></div>
+            
+            </div>
+
+            <hr>
+            <p style="color: #666; font-size: 0.9em;">
+                Generated by Website Quality Agent v0.1.0
+            </p>
+        </body>
+        </html>
+        

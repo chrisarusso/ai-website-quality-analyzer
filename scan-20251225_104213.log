@@ -1,0 +1,17 @@
+
+Scanning: https://savaslabs.com
+Max pages: 9999
+
+Error crawling https://savaslabs.com/blog/return-office-nah-retreat-yo-self-yes: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://savaslabs.com/blog/return-office-nah-retreat-yo-self-yes", waiting until "networkidle"
+
+Error crawling https://savaslabs.com/blog/whens-next-f1-race: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://savaslabs.com/blog/whens-next-f1-race", waiting until "networkidle"
+
+⠹ Generating report...
+
+HTML report saved to: report_33d61975.html
+
+Scan ID: 33d61975

@@ -1,0 +1,13 @@
+
+Scanning: https://americanpackaging.com
+Max pages: 9999
+
+Error crawling https://americanpackaging.com: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://americanpackaging.com/", waiting until "networkidle"
+
+⠼ Generating report...
+
+HTML report saved to: report_afe47d67.html
+
+Scan ID: afe47d67
