@@ -516,6 +516,7 @@ class FixTestRunner:
                 "title": issue.get("title"),
                 "url": issue.get("url"),
                 "element": issue.get("element"),
+                "recommendation": issue.get("recommendation"),
                 "user_instructions": test_case.get("user_instructions", ""),
             }],
         }

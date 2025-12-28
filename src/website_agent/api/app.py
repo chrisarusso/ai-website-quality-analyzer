@@ -643,6 +643,7 @@ class IssueItem(BaseModel):
     title: str
     url: str
     element: Optional[str] = None  # Contains spelling correction info like '"ROT" → "ROI"'
+    recommendation: Optional[str] = None  # Contains fix suggestion like "Change to: ROI"
     user_instructions: Optional[str] = None
 
 
