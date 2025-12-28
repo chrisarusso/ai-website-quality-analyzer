@@ -17,6 +17,7 @@ For each test, verifies:
 - Uses Playwright to screenshot revision diffs for visual verification
 """
 
+import hashlib
 import json
 import os
 import re
@@ -451,6 +452,11 @@ class FixTestRunner:
             logger.error(f"Error getting issues: {e}")
             return None
 
+    def _get_issue_id(self, issue: dict) -> str:
+        """Generate hash-based issue ID matching the HTML report format."""
+        key = f"{issue.get('category')}:{issue.get('title')}"
+        return hashlib.md5(key.encode()).hexdigest()[:12]
+
     def find_issue_for_test(self, test_case, issues):
         """Find the matching issue for a test case."""
         if "search_title" in test_case:
@@ -497,16 +503,19 @@ class FixTestRunner:
         logger.info(f"  Element: {(issue.get('element') or '')[:100]}...")
 
         # Build and submit fix request
+        issue_id = self._get_issue_id(issue)
+        logger.info(f"  Issue ID: {issue_id}")
+
         fix_request = {
             "scan_id": self.scan_id,
             "github_repo": GITHUB_REPO,
             "issues": [{
+                "issue_id": issue_id,
                 "category": issue.get("category"),
                 "severity": issue.get("severity"),
                 "title": issue.get("title"),
                 "url": issue.get("url"),
                 "element": issue.get("element"),
-                "recommendation": issue.get("recommendation"),
                 "user_instructions": test_case.get("user_instructions", ""),
             }],
         }
