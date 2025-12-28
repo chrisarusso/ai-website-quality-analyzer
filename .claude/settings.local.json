@@ -30,7 +30,26 @@
       "Bash(rsync:*)",
       "Bash(./ ubuntu@3.16.155.59:/home/ubuntu/website-quality-agent/)",
       "Bash(/Users/chris/web/savas-things/AI/projects/website-quality-agent/ )",
-      "Bash(ubuntu@3.16.155.59:/home/ubuntu/website-quality-agent/)"
+      "Bash(ubuntu@3.16.155.59:/home/ubuntu/website-quality-agent/)",
+      "Bash(uv pip install:*)",
+      "Bash(lsof:*)",
+      "WebFetch(domain:demo-agent-savas-labs.pantheonsite.io)",
+      "Bash(xargs kill:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh api:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(# Check what branch the demo-agent multidev uses terminus multidev:list savas-labs --format=json | python3 -c \"\" import json, sys data = json.load\\(sys.stdin\\) for env in data: if env.get\\(''id''\\) == ''demo-agent'' or env.get\\(''Name''\\) == ''demo-agent'': print\\(json.dumps\\(env, indent=2\\)\\) \"\" || terminus env:info savas-labs.demo-agent --format=json)",
+      "Bash(terminus env:info:*)",
+      "Bash(# Get Pantheon git connection info terminus connection:info savas-labs.demo-agent --field=git_url || terminus connection:info savas-labs.demo-agent --format=json)",
+      "Bash(terminus multidev:list:*)",
+      "Bash(terminus env:list:*)",
+      "Bash(terminus env:clone-content:*)",
+      "Bash(source:*)",
+      "Bash(terminus connection:info:*)",
+      "Bash(echo:*)",
+      "Bash(wc:*)"
     ]
   }
 }

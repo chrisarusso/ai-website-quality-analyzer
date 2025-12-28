@@ -29,6 +29,8 @@ dependencies = [
     "tqdm>=4.66.0",
     "authlib>=1.6.6",
     "itsdangerous>=2.2.0",
+    # Drupal content editing (shared library)
+    "drupal-editor-agent @ file:///Users/chris/web/savas-things/AI/projects/shared/drupal-editor-agent",
 ]
 
 [project.optional-dependencies]
@@ -44,6 +46,9 @@ website-agent = "website_agent.cli:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/website_agent"]

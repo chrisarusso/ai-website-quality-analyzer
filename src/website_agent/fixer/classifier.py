@@ -48,6 +48,12 @@ class FixClassifier:
         ("security", "*", FixType.MANUAL_ONLY),
         ("performance", "*", FixType.MANUAL_ONLY),
 
+        # CONTENT_FIX: Internal broken links can be fixed in Drupal
+        ("links", "Internal broken link", FixType.CONTENT_FIX),
+        ("links", "Broken link", FixType.CONTENT_FIX),  # Default broken links to content fix
+        ("links", "Link returns 404", FixType.CONTENT_FIX),
+        ("links", "Link returns 403", FixType.CONTENT_FIX),
+
         # NOT_FIXABLE: External resources
         ("links", "External broken link", FixType.NOT_FIXABLE),
         ("links", "External link returns", FixType.NOT_FIXABLE),

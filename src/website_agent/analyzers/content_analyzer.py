@@ -106,9 +106,10 @@ RULES:
    - Flag words that are clearly misspelled (typos, wrong letters, missing letters)
    - The "word" field must contain the ACTUAL misspelled word from the text
    - SKIP these (not errors): proper nouns, company names, people names, place names
-   - SKIP these (not errors): technical terms, industry jargon, brand names, acronyms
+   - SKIP these (not errors): technical terms, industry jargon, brand names
    - SKIP these (not errors): words that are correct but uncommon
    - Examples of real errors to flag: "teh" (the), "recieve" (receive), "occured" (occurred), "seperate" (separate)
+   - IMPORTANT: Flag cases where a word/acronym is valid but clearly wrong in context (e.g., "ROT" when "ROI" is intended, "form" when "from" is intended). These are typos even if both words are valid.
 
 2. For GRAMMAR:
    - "original" must be the EXACT text as it appears
@@ -152,11 +153,6 @@ Be thorough but accurate - flag clear errors, skip ambiguous cases."""
             suggestion = error.get('suggestion', 'check spelling')
             context = error.get('context', '')
 
-            # Build element showing the context with the error highlighted
-            element_text = f'"{word}" → "{suggestion}"'
-            if context:
-                element_text += f'\n\nContext:\n"{context}"'
-
             issues.append(Issue(
                 category=IssueCategory.SPELLING,
                 severity=Severity.MEDIUM,
@@ -164,7 +160,7 @@ Be thorough but accurate - flag clear errors, skip ambiguous cases."""
                 description=f"The word '{word}' appears to be misspelled.",
                 recommendation=f"Change to: {suggestion}",
                 url=url,
-                element=element_text,
+                element=context if context else None,  # Just the context, not arrow format
             ))
 
         # Process grammar errors
@@ -174,17 +170,6 @@ Be thorough but accurate - flag clear errors, skip ambiguous cases."""
             suggestion = error.get('suggestion', 'Review and correct the grammar')
             context = error.get('context', '')
 
-            # Build element showing original vs suggestion
-            element_parts = []
-            if original:
-                element_parts.append(f'Original: "{original}"')
-            if suggestion and suggestion != issue_desc:
-                element_parts.append(f'Suggested: "{suggestion}"')
-            if context and context != original:
-                element_parts.append(f'\nContext:\n"{context}"')
-
-            element_text = '\n'.join(element_parts) if element_parts else issue_desc
-
             issues.append(Issue(
                 category=IssueCategory.GRAMMAR,
                 severity=Severity.MEDIUM,
@@ -192,7 +177,7 @@ Be thorough but accurate - flag clear errors, skip ambiguous cases."""
                 description=issue_desc,
                 recommendation=suggestion if suggestion != issue_desc else "Review and correct the grammar",
                 url=url,
-                element=element_text,
+                element=context if context else None,  # Just the context
             ))
 
         # Process formatting issues
@@ -202,17 +187,6 @@ Be thorough but accurate - flag clear errors, skip ambiguous cases."""
             suggestion = error.get('suggestion', 'Fix the formatting')
             context = error.get('context', '')
 
-            # Build element showing original vs suggestion
-            element_parts = []
-            if original:
-                element_parts.append(f'Original: "{original}"')
-            if suggestion and suggestion != issue_desc:
-                element_parts.append(f'Suggested: "{suggestion}"')
-            if context and context != original:
-                element_parts.append(f'\nContext:\n"{context}"')
-
-            element_text = '\n'.join(element_parts) if element_parts else issue_desc
-
             issues.append(Issue(
                 category=IssueCategory.FORMATTING,
                 severity=Severity.LOW,
@@ -220,7 +194,7 @@ Be thorough but accurate - flag clear errors, skip ambiguous cases."""
                 description=issue_desc,
                 recommendation=suggestion if suggestion != issue_desc else "Fix the formatting",
                 url=url,
-                element=element_text,
+                element=context if context else None,  # Just the context
             ))
 
         return issues

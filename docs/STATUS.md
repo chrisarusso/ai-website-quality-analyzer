@@ -1,6 +1,42 @@
 # Website Quality Agent - Status
 
-**Last Updated:** 2025-12-27
+**Last Updated:** 2025-12-28
+
+## Setup Requirements
+
+### Drupal User for Content Fixes
+
+Content revisions should be attributed to a dedicated Drupal user. Create or identify a user with the following:
+- **Username:** `claude-agent-test` (or similar)
+- **Role:** Content Editor (or role with permission to create draft revisions)
+- **Purpose:** All automated content fixes will be attributed to this user
+
+This ensures clear audit trail and distinguishes agent-created revisions from human edits.
+
+### Pantheon Git URL
+
+For code fixes on Pantheon multidev environments, the code search needs the Pantheon git URL:
+```
+terminus connection:info savas-labs.demo-agent --field=git_url
+```
+
+This URL is used to clone the codebase for searching template files.
+
+### After DB Rollback
+
+After resetting the demo-agent database from live, generate a login link:
+```bash
+# Reset DB from live
+terminus env:clone-content savas-labs.live demo-agent --db-only --yes
+
+# Clear cache
+terminus drush savas-labs.demo-agent -- cr
+
+# Generate login link
+terminus drush savas-labs.demo-agent -- uli
+```
+
+---
 
 ## Remote Server
 

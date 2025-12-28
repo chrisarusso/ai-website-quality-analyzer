@@ -130,7 +130,8 @@ class ScanResult(BaseModel):
 
 class ScanRequest(BaseModel):
     """Request to start a new scan."""
-    url: HttpUrl
+    url: Optional[HttpUrl] = Field(default=None, description="Single URL to crawl from")
+    urls: Optional[list[HttpUrl]] = Field(default=None, description="Specific URLs to scan (no crawling)")
     max_pages: int = Field(default=50, ge=1, le=500)
     include_external_links: bool = False
     categories: list[IssueCategory] = Field(

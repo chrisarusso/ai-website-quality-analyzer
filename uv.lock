@@ -397,6 +397,33 @@ wheels = [
 ]
 
 [[package]]
+name = "drupal-editor-agent"
+version = "0.1.0"
+source = { directory = "../shared/drupal-editor-agent" }
+dependencies = [
+    { name = "httpx" },
+    { name = "playwright" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "python-dotenv" },
+    { name = "rich" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.26.0" },
+    { name = "playwright", specifier = ">=1.40.0" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "pydantic-settings", specifier = ">=2.0.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
+    { name = "rich", specifier = ">=13.0.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
+]
+provides-extras = ["dev"]
+
+[[package]]
 name = "fastapi"
 version = "0.127.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1341,6 +1368,7 @@ dependencies = [
     { name = "aiosqlite" },
     { name = "authlib" },
     { name = "beautifulsoup4" },
+    { name = "drupal-editor-agent" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "itsdangerous" },
@@ -1369,6 +1397,7 @@ requires-dist = [
     { name = "aiosqlite", specifier = ">=0.19.0" },
     { name = "authlib", specifier = ">=1.6.6" },
     { name = "beautifulsoup4", specifier = ">=4.12.0" },
+    { name = "drupal-editor-agent", directory = "../shared/drupal-editor-agent" },
     { name = "fastapi", specifier = ">=0.109.0" },
     { name = "httpx", specifier = ">=0.26.0" },
     { name = "itsdangerous", specifier = ">=2.2.0" },

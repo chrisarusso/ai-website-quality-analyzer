@@ -542,21 +542,37 @@ async def start_scan(
     """Start a new website scan.
 
     The scan runs in the background. Use the returned scan_id to check status.
+
+    Two modes:
+    - Single URL mode: Provide `url` to crawl from that starting point
+    - Multi-URL mode: Provide `urls` list to scan specific pages only (no crawling)
     """
     scan_id = str(uuid.uuid4())[:8]
-    url = str(scan_request.url)
 
-    # Create scan record
-    store.create_scan(scan_id, url)
-
-    # Run scan in background
-    background_tasks.add_task(run_scan, scan_id, url, scan_request.max_pages)
-
-    return ScanResponse(
-        scan_id=scan_id,
-        status="pending",
-        message=f"Scan started. Check status at /api/scan/{scan_id}",
-    )
+    # Determine mode: multi-URL or single URL crawl
+    if scan_request.urls:
+        # Multi-URL mode: scan specific pages only
+        urls = [str(u) for u in scan_request.urls]
+        primary_url = urls[0]  # Use first URL as the scan's primary URL
+        store.create_scan(scan_id, primary_url)
+        background_tasks.add_task(run_multi_url_scan, scan_id, urls)
+        return ScanResponse(
+            scan_id=scan_id,
+            status="pending",
+            message=f"Scanning {len(urls)} specific URL(s). Check status at /api/scan/{scan_id}",
+        )
+    elif scan_request.url:
+        # Single URL mode: crawl from starting point
+        url = str(scan_request.url)
+        store.create_scan(scan_id, url)
+        background_tasks.add_task(run_scan, scan_id, url, scan_request.max_pages)
+        return ScanResponse(
+            scan_id=scan_id,
+            status="pending",
+            message=f"Scan started. Check status at /api/scan/{scan_id}",
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Must provide either 'url' or 'urls'")
 
 
 @app.get("/api/scan/{scan_id}", response_model=ScanStatus)
@@ -626,6 +642,7 @@ class IssueItem(BaseModel):
     severity: str
     title: str
     url: str
+    element: Optional[str] = None  # Contains spelling correction info like '"ROT" → "ROI"'
     user_instructions: Optional[str] = None
 
 
@@ -703,6 +720,35 @@ async def create_fixes(
         # Generate a unique fix ID
         fix_id = f"{batch_id}-{fixes_created + 1}"
 
+        # Parse original/corrected text from title and recommendation
+        # Title format: "Spelling error: 'word'" or "Grammar issue: ..."
+        # Recommendation format: "Change to: correction" or specific text
+        import re
+        original_value = None
+        proposed_value = None
+
+        # Extract from title: "Spelling error: 'word'" -> word
+        title_match = re.search(r"error:\s*['\"]([^'\"]+)['\"]", issue_item.title, re.IGNORECASE)
+        if title_match:
+            original_value = title_match.group(1)
+
+        # Extract from recommendation: "Change to: suggestion"
+        rec_match = re.search(r"Change to:\s*(.+)", issue_item.recommendation or "", re.IGNORECASE)
+        if rec_match:
+            proposed_value = rec_match.group(1).strip()
+
+        # Fallback: try broken link format in element: <a href="url">text</a>
+        if not original_value and issue_item.element:
+            link_match = re.search(r'(<a\s+href=["\'][^"\']+["\'][^>]*>[^<]+</a>)', issue_item.element, re.IGNORECASE)
+            if link_match:
+                full_link_html = link_match.group(1)
+                # Extract just the text content
+                text_match = re.search(r'>([^<]+)</a>', full_link_html, re.IGNORECASE)
+                link_text = text_match.group(1) if text_match else ""
+                # Original is the full <a> tag, proposed is just the text
+                original_value = full_link_html
+                proposed_value = link_text
+
         # Store issue data for background processing
         issue_data_map[fix_id] = {
             "category": issue_item.category,
@@ -711,6 +757,7 @@ async def create_fixes(
             "description": "",
             "recommendation": recommendation,
             "url": issue_item.url,
+            "element": issue_item.element,
         }
 
         # Create the proposed fix record
@@ -722,10 +769,12 @@ async def create_fixes(
             status=FixStatus.PENDING,
             confidence=confidence,
             user_instructions=issue_item.user_instructions,
+            original_value=original_value,
+            proposed_value=proposed_value,
         )
 
-        # Store the fix
-        store.create_fix(proposed_fix, batch_id=batch_id)
+        # Store the fix (batch_id is encoded in the fix id as prefix)
+        store.create_fix(proposed_fix)
         fixes_created += 1
 
     # Trigger background task for GitHub issue creation if enabled and token available
@@ -760,20 +809,37 @@ async def process_fix_batch(
 
     Creates GitHub issues and attempts auto-fixes where possible.
     """
+    import traceback
+
     try:
+        print(f"Starting batch {batch_id} processing with {len(issue_data_map)} issues")
+        print(f"GitHub repo: {github_repo}")
+
         results = fix_orchestrator.process_batch(
             batch_id=batch_id,
             issue_data_map=issue_data_map,
             github_repo=github_repo,
         )
 
-        # Log results
+        # Log each result
+        for r in results:
+            status_icon = "✓" if r.success else "✗"
+            print(f"  {status_icon} Fix {r.fix_id}: {r.status.value} - {r.message}")
+            if r.github_issue_url:
+                print(f"    GitHub: {r.github_issue_url}")
+            if r.github_pr_url:
+                print(f"    PR: {r.github_pr_url}")
+            if r.drupal_revision_url:
+                print(f"    Drupal: {r.drupal_revision_url}")
+
+        # Log summary
         success_count = sum(1 for r in results if r.success)
         fail_count = len(results) - success_count
         print(f"Processed batch {batch_id}: {success_count} succeeded, {fail_count} failed")
 
     except Exception as e:
         print(f"Error processing batch {batch_id}: {e}")
+        traceback.print_exc()
 
 
 @app.get("/api/fix/{batch_id}/status", response_model=FixBatchStatus)
@@ -946,6 +1012,163 @@ async def run_scan(scan_id: str, url: str, max_pages: int):
         # Send Slack notification for scan failure
         notify_scan_failed(
             url=url,
+            scan_id=scan_id,
+            error=str(e),
+            duration_seconds=duration_seconds,
+        )
+        store.update_scan_status(scan_id, "failed", error=str(e))
+        raise
+
+
+async def run_multi_url_scan(scan_id: str, urls: list[str]):
+    """Background task to scan specific URLs without crawling.
+
+    Fetches and analyzes each URL in the list directly.
+    """
+    import time
+    from bs4 import BeautifulSoup
+    from playwright.async_api import async_playwright
+
+    start_time = time.time()
+    primary_url = urls[0]
+
+    # Send Slack notification for scan start
+    notify_scan_started(primary_url, len(urls), scan_id)
+
+    try:
+        store.update_scan_status(scan_id, "running", pages_total=len(urls))
+
+        pages = []
+
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            )
+
+            for i, url in enumerate(urls):
+                try:
+                    page = await context.new_page()
+                    fetch_start = time.time()
+
+                    response = await page.goto(url, wait_until="networkidle", timeout=30000)
+                    status_code = response.status if response else 0
+                    load_time_ms = (time.time() - fetch_start) * 1000
+
+                    if status_code != 200:
+                        pages.append(PageResult(
+                            url=url,
+                            status_code=status_code,
+                            load_time_ms=load_time_ms,
+                            crawled_at=datetime.utcnow(),
+                        ))
+                        await page.close()
+                        continue
+
+                    html = await page.content()
+                    text = await page.inner_text("body")
+                    soup = BeautifulSoup(html, "lxml")
+
+                    # Run all analyzers
+                    all_issues = []
+
+                    for analyzer in analyzers:
+                        try:
+                            issues = analyzer.analyze(
+                                url=url,
+                                html=html,
+                                text=text,
+                                soup=soup,
+                            )
+                            all_issues.extend(issues)
+                        except Exception as e:
+                            print(f"Analyzer {analyzer.__class__.__name__} failed on {url}: {e}")
+
+                    # Run async link checking
+                    try:
+                        link_issues = await link_analyzer.analyze_async(
+                            url=url,
+                            html=html,
+                            text=text,
+                            soup=soup,
+                            base_url=primary_url,
+                        )
+                        all_issues.extend(link_issues)
+                    except Exception as e:
+                        print(f"LinkAnalyzer failed on {url}: {e}")
+
+                    # Extract metadata
+                    title_tag = soup.find("title")
+                    title_text = title_tag.string.strip() if title_tag and title_tag.string else None
+
+                    meta_desc = soup.find("meta", attrs={"name": "description"})
+                    meta_desc_text = meta_desc.get("content", "").strip() if meta_desc else None
+
+                    h1_tags = [h1.get_text(strip=True) for h1 in soup.find_all("h1")]
+
+                    page_result = PageResult(
+                        url=url,
+                        status_code=status_code,
+                        title=title_text,
+                        meta_description=meta_desc_text,
+                        h1_tags=h1_tags,
+                        word_count=len(text.split()) if text else 0,
+                        load_time_ms=load_time_ms,
+                        issues=all_issues,
+                        crawled_at=datetime.utcnow(),
+                    )
+
+                    pages.append(page_result)
+                    store.save_page(scan_id, page_result)
+
+                    await page.close()
+
+                    # Update progress
+                    store.update_scan_status(
+                        scan_id, "running",
+                        pages_crawled=i + 1,
+                        pages_total=len(urls)
+                    )
+
+                except Exception as e:
+                    print(f"Error fetching {url}: {e}")
+                    pages.append(PageResult(
+                        url=url,
+                        status_code=0,
+                        load_time_ms=0,
+                        crawled_at=datetime.utcnow(),
+                    ))
+
+            await browser.close()
+
+        # Create scan result and summary
+        scan = ScanResult(
+            id=scan_id,
+            url=primary_url,
+            started_at=datetime.utcnow(),
+            completed_at=datetime.utcnow(),
+            status="completed",
+            pages=pages,
+        )
+
+        summary = aggregator.aggregate(scan)
+        store.update_scan_status(scan_id, "completed", summary=summary)
+
+        # Send Slack notification for scan completion
+        duration_seconds = int(time.time() - start_time)
+        notify_scan_completed(
+            url=primary_url,
+            scan_id=scan_id,
+            pages_crawled=len(pages),
+            total_issues=summary.total_issues if summary else 0,
+            overall_score=summary.overall_score if summary else 0,
+            duration_seconds=duration_seconds,
+        )
+
+    except Exception as e:
+        duration_seconds = int(time.time() - start_time)
+        notify_scan_failed(
+            url=primary_url,
             scan_id=scan_id,
             error=str(e),
             duration_seconds=duration_seconds,

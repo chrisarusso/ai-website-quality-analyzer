@@ -468,6 +468,8 @@ class ReportAggregator:
                     # Generate unique ID for this issue
                     issue_id = get_issue_id(issue)
                     escaped_title = html_module.escape(issue.title).replace("'", "\\'").replace('"', '&quot;')
+                    # Escape element field for data attribute (contains spelling correction info)
+                    escaped_element = html_module.escape(issue.element or "").replace("'", "\\'").replace('"', '&quot;').replace('\n', '\\n')
 
                     # Build fix controls HTML (checkbox + instruction input)
                     fix_controls_html = ""
@@ -480,7 +482,8 @@ class ReportAggregator:
                                     data-category="{issue.category}"
                                     data-severity="{issue.severity}"
                                     data-title="{escaped_title}"
-                                    data-url="{issue.url}">
+                                    data-url="{issue.url}"
+                                    data-element="{escaped_element}">
                                 <span>🔧 Select for auto-fix</span>
                             </label>
                             <div class="fix-instructions hidden">
@@ -705,6 +708,7 @@ class ReportAggregator:
                                 severity: this.dataset.severity,
                                 title: this.dataset.title,
                                 url: this.dataset.url,
+                                element: (this.dataset.element || '').replace(/\\n/g, '\\n'),
                                 instructions: ''
                             }};
                             const instructionDiv = this.closest('.fix-controls').querySelector('.fix-instructions');
@@ -765,6 +769,7 @@ class ReportAggregator:
                             severity: data.severity,
                             title: data.title,
                             url: data.url,
+                            element: data.element || null,
                             user_instructions: data.instructions || null
                         }});
                     }});
