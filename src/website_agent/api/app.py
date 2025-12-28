@@ -24,6 +24,7 @@ from ..config import (
     API_HOST, API_PORT, GITHUB_TOKEN, GITHUB_DEFAULT_REPO,
     API_USERNAME, API_PASSWORD, GOOGLE_CLIENT_ID, SESSION_SECRET_KEY,
 )
+from ..slack import notify_scan_started, notify_scan_completed, notify_scan_failed
 from .auth import (
     login as auth_login,
     callback as auth_callback,
@@ -829,6 +830,12 @@ async def get_scan_fixes(scan_id: str, request: Request, auth: dict = Depends(ve
 
 async def run_scan(scan_id: str, url: str, max_pages: int):
     """Background task to run a website scan."""
+    import time
+    start_time = time.time()
+
+    # Send Slack notification for scan start
+    notify_scan_started(url, max_pages, scan_id)
+
     try:
         store.update_scan_status(scan_id, "running")
 
@@ -923,7 +930,26 @@ async def run_scan(scan_id: str, url: str, max_pages: int):
         summary = aggregator.aggregate(scan)
         store.update_scan_status(scan_id, "completed", summary=summary)
 
+        # Send Slack notification for scan completion
+        duration_seconds = int(time.time() - start_time)
+        notify_scan_completed(
+            url=url,
+            scan_id=scan_id,
+            pages_crawled=len(pages),
+            total_issues=summary.total_issues if summary else 0,
+            overall_score=summary.overall_score if summary else 0,
+            duration_seconds=duration_seconds,
+        )
+
     except Exception as e:
+        duration_seconds = int(time.time() - start_time)
+        # Send Slack notification for scan failure
+        notify_scan_failed(
+            url=url,
+            scan_id=scan_id,
+            error=str(e),
+            duration_seconds=duration_seconds,
+        )
         store.update_scan_status(scan_id, "failed", error=str(e))
         raise
 

@@ -22,6 +22,7 @@ from rich.table import Table
 
 from .config import API_PORT
 from .crawler import PlaywrightCrawler
+from .slack import notify_scan_started, notify_scan_completed, notify_scan_failed
 from .analyzers import (
     SEOAnalyzer,
     ContentAnalyzer,
@@ -289,6 +290,8 @@ async def run_scan(url: str, max_pages: int) -> ScanResult:
 
 def cmd_scan(args):
     """Handle scan command."""
+    import time
+
     # Handle unlimited crawling
     max_pages = args.max_pages
     if args.all or max_pages == 0:
@@ -299,9 +302,18 @@ def cmd_scan(args):
         console.print(f"\n[bold]Scanning:[/bold] {args.url}")
         console.print(f"[dim]Max pages: {max_pages}[/dim]\n")
 
+    # Generate scan ID early so we can use it in notifications
+    scan_id = str(uuid.uuid4())[:8]
+    start_time = time.time()
+
+    # Send Slack notification for scan start
+    notify_scan_started(args.url, max_pages, scan_id)
+
     try:
         scan = asyncio.run(run_scan(args.url, max_pages))
+        duration_seconds = int(time.time() - start_time)
 
+        report_filename = None
         if args.output == "text":
             aggregator = ReportAggregator()
             report = aggregator.generate_text_report(scan, scan.summary)
@@ -312,17 +324,36 @@ def cmd_scan(args):
             # Generate filename with URL slug and timestamp
             url_slug = url_to_filename_slug(args.url)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-            filename = f"report_{url_slug}_{timestamp}_{scan.id}.html"
-            with open(filename, "w") as f:
+            report_filename = f"report_{url_slug}_{timestamp}_{scan.id}.html"
+            with open(report_filename, "w") as f:
                 f.write(html)
-            console.print(f"\n[green]HTML report saved to: {filename}[/green]")
+            console.print(f"\n[green]HTML report saved to: {report_filename}[/green]")
         else:
             import json
             print(scan.model_dump_json(indent=2))
 
         console.print(f"\n[dim]Scan ID: {scan.id}[/dim]")
 
+        # Send Slack notification for scan completion
+        notify_scan_completed(
+            url=args.url,
+            scan_id=scan.id,
+            pages_crawled=len(scan.pages),
+            total_issues=scan.summary.total_issues if scan.summary else 0,
+            overall_score=scan.summary.overall_score if scan.summary else 0,
+            duration_seconds=duration_seconds,
+            report_file=report_filename,
+        )
+
     except Exception as e:
+        duration_seconds = int(time.time() - start_time)
+        # Send Slack notification for scan failure
+        notify_scan_failed(
+            url=args.url,
+            scan_id=scan_id,
+            error=str(e),
+            duration_seconds=duration_seconds,
+        )
         console.print(f"[red]Error: {e}[/red]")
         sys.exit(1)
 

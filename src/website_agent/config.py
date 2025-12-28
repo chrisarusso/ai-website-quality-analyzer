@@ -58,6 +58,9 @@ DRUPAL_BASE_URL = os.getenv("DRUPAL_BASE_URL", "https://savaslabs.com")
 DRUPAL_CLIENT_ID = os.getenv("DRUPAL_CLIENT_ID")
 DRUPAL_CLIENT_SECRET = os.getenv("DRUPAL_CLIENT_SECRET")
 
+# Slack notification configuration
+SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", "")
+
 # Severity weights for scoring
 SEVERITY_WEIGHTS = {
     "critical": 10,
