@@ -1,6 +1,7 @@
 #!/bin/bash
 # Run fix flow tests on EC2 with full logging
-# All output saved to timestamped log file for later review
+# Uses existing scan 7dc37550 - does NOT run a new scan
+# All output saved to timestamped log file for review
 
 set -e
 
@@ -11,6 +12,7 @@ LOG_FILE="test_run_${TIMESTAMP}.log"
 RESULTS_DIR="test_results"
 
 mkdir -p "$RESULTS_DIR"
+mkdir -p "$RESULTS_DIR/screenshots"
 
 # Redirect all output to log file AND stdout
 exec > >(tee -a "$RESULTS_DIR/$LOG_FILE") 2>&1
@@ -19,14 +21,15 @@ echo "=========================================="
 echo "FIX FLOW TEST RUNNER"
 echo "Started: $(date)"
 echo "Log file: $RESULTS_DIR/$LOG_FILE"
+echo "Using scan: 7dc37550"
 echo "=========================================="
 
 # Step 1: Pull latest code
 echo ""
 echo "[1/5] Pulling latest code from GitHub..."
-git fetch origin
-git reset --hard origin/master
-echo "Code updated to: $(git rev-parse --short HEAD)"
+git fetch origin 2>/dev/null || git fetch github 2>/dev/null || echo "Git fetch skipped"
+git reset --hard origin/master 2>/dev/null || git reset --hard github/master 2>/dev/null || echo "Using current code"
+echo "Code version: $(git rev-parse --short HEAD)"
 
 # Step 2: Activate virtualenv
 echo ""
@@ -53,20 +56,39 @@ else
     done
 fi
 
-# Step 4: Verify terminus auth
+# Step 4: Verify terminus auth (needed for Drupal fixes)
 echo ""
 echo "[4/5] Verifying terminus authentication..."
 TERMINUS_USER=$(terminus auth:whoami 2>&1 || echo "NOT LOGGED IN")
 echo "Terminus user: $TERMINUS_USER"
 if [[ "$TERMINUS_USER" == "NOT LOGGED IN" ]]; then
-    echo "ERROR: Terminus not authenticated. Cannot run Drupal content fixes."
+    echo "WARNING: Terminus not authenticated. Drupal content fixes may fail."
+fi
+
+# Step 5: Verify scan exists before running tests
+echo ""
+echo "[5/5] Verifying scan 7dc37550 exists..."
+SCAN_CHECK=$(curl -s http://localhost:8003/api/scan/7dc37550)
+if echo "$SCAN_CHECK" | grep -q '"status":"completed"'; then
+    echo "Scan found and completed"
+    echo "Scan details: $SCAN_CHECK"
+else
+    echo "ERROR: Scan 7dc37550 not found or not completed!"
+    echo "Response: $SCAN_CHECK"
     exit 1
 fi
 
-# Step 5: Run tests
+# Run tests
 echo ""
-echo "[5/5] Running fix flow tests..."
+echo "=========================================="
+echo "RUNNING FIX FLOW TESTS"
+echo "=========================================="
 echo ""
+
+# Set environment variables
+export SCAN_ID="7dc37550"
+export API_BASE="http://localhost:8003"
+
 python scripts/run_fix_tests.py 2>&1
 
 # Copy any generated result files to results dir
@@ -76,11 +98,17 @@ mv fix_test_*.log "$RESULTS_DIR/" 2>/dev/null || true
 echo ""
 echo "=========================================="
 echo "Test run complete: $(date)"
-echo "Results saved to: $RESULTS_DIR/"
-echo "Log file: $RESULTS_DIR/$LOG_FILE"
 echo "=========================================="
 
-# List result files
+# Show result files
 echo ""
-echo "Result files:"
+echo "Result files in $RESULTS_DIR/:"
 ls -la "$RESULTS_DIR/"
+
+echo ""
+echo "Screenshots in $RESULTS_DIR/screenshots/:"
+ls -la "$RESULTS_DIR/screenshots/" 2>/dev/null || echo "(none)"
+
+echo ""
+echo "To view full log: cat ~/website-quality-agent/$RESULTS_DIR/$LOG_FILE"
+echo "To view JSON results: cat ~/website-quality-agent/$RESULTS_DIR/fix_test_results_*.json"
