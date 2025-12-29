@@ -567,10 +567,23 @@ $para->set($field_name, $new_content);
 $para->setNewRevision(TRUE);
 $para->save();
 
-// Also create node revision for moderation
+// Get new paragraph revision ID
+$new_para_vid = $para->getRevisionId();
+
+// Load node and update reference to new paragraph revision
 $node_storage = \\Drupal::entityTypeManager()->getStorage("node");
 $node = $node_storage->load($nid);
 $previous_vid = $node->getRevisionId();
+
+// Update the node's paragraph field to reference the new paragraph revision
+$para_field = $node->get("field_body_paragraphs");
+$values = $para_field->getValue();
+foreach ($values as $delta => $value) {{
+    if ($value["target_id"] == $para_id) {{
+        $values[$delta]["target_revision_id"] = $new_para_vid;
+    }}
+}}
+$node->set("field_body_paragraphs", $values);
 
 $node->setNewRevision(TRUE);
 $node->set("moderation_state", "ava_suggestion");
@@ -1022,6 +1035,8 @@ Return ONLY valid JSON, no other text."""
         escaped_log = log_message.replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"')
 
         # Build PHP to apply all changes in one revision
+        # For paragraphs, we need to update the paragraph AND update the node's
+        # reference to point to the new paragraph revision
         php_updates = []
         for change in changes_made:
             escaped_content = change["fixed"].replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"')
@@ -1029,12 +1044,25 @@ Return ONLY valid JSON, no other text."""
             para_id = change.get("paragraph_id")
 
             if para_id:
+                # For paragraphs: update content, create new revision, AND update node reference
                 php_updates.append(f'''
-$para = \\Drupal::entityTypeManager()->getStorage("paragraph")->load({para_id});
+// Update paragraph {para_id}
+$para_storage = \\Drupal::entityTypeManager()->getStorage("paragraph");
+$para = $para_storage->load({para_id});
 if ($para) {{
     $para->set("{field_name}", "{escaped_content}");
     $para->setNewRevision(TRUE);
     $para->save();
+
+    // Update node's reference to the new paragraph revision
+    $para_field = $node->get("field_body_paragraphs");
+    $values = $para_field->getValue();
+    foreach ($values as $delta => $value) {{
+        if ($value["target_id"] == {para_id}) {{
+            $values[$delta]["target_revision_id"] = $para->getRevisionId();
+        }}
+    }}
+    $node->set("field_body_paragraphs", $values);
 }}
 ''')
             else:
