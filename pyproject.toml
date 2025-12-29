@@ -29,8 +29,9 @@ dependencies = [
     "tqdm>=4.66.0",
     "authlib>=1.6.6",
     "itsdangerous>=2.2.0",
-    # Drupal content editing (shared library)
-    "drupal-editor-agent @ file:///Users/chris/web/savas-things/AI/projects/shared/drupal-editor-agent",
+    # Drupal content editing (shared library) - only needed for fix functionality, not scanning
+    # Uncomment for local development with fix features:
+    # "drupal-editor-agent @ file:///Users/chris/web/savas-things/AI/projects/shared/drupal-editor-agent",
 ]
 
 [project.optional-dependencies]

@@ -9,7 +9,17 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional
 
-from ..config import SEVERITY_WEIGHTS
+from ..config import SEVERITY_WEIGHTS, API_BASE_URL
+
+
+def get_path_prefix() -> str:
+    """Extract path prefix from API_BASE_URL for links in reports."""
+    if API_BASE_URL:
+        from urllib.parse import urlparse
+        parsed = urlparse(API_BASE_URL)
+        if parsed.path and parsed.path != '/':
+            return parsed.path.rstrip('/')
+    return ""
 from ..models import (
     CategoryScore,
     Issue,
@@ -814,7 +824,7 @@ Do you want to proceed?`;
                     if (btn) btn.disabled = true;
 
                     try {{
-                        const response = await fetch('/api/fix', {{
+                        const response = await fetch('{get_path_prefix()}/api/fix', {{
                             method: 'POST',
                             headers: {{ 'Content-Type': 'application/json' }},
                             body: JSON.stringify({{
@@ -863,7 +873,7 @@ Do you want to proceed?`;
         </head>
         <body>
             <nav style="margin-bottom: 20px; padding: 10px 0; border-bottom: 1px solid #eee;">
-                <a href="/website-quality-agent/" style="color: #0066cc; text-decoration: none;">← Back to Dashboard</a>
+                <a href="{get_path_prefix()}/" style="color: #0066cc; text-decoration: none;">← Back to Dashboard</a>
             </nav>
             <h1>Website Quality Report</h1>
             <p><strong>URL:</strong> <a href="{scan.url}" target="_blank">{scan.url}</a></p>
