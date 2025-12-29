@@ -6,6 +6,23 @@ Future improvements and planned enhancements.
 
 ## Known Issues / Bugs
 
+### Bug: PR #141 Removed Extra Text During Word Swap
+**Date:** 2025-12-28
+**Example:** https://github.com/savaslabs/poc-savaslabs.com/pull/141/files
+**Problem:** The code fix generator replaced more than just the target word. While swapping the correct word, it also removed surrounding text.
+**Root cause:** Likely the LLM-generated fix included too much context in the replacement. Need to constrain the edit to just the word/phrase being fixed.
+
+### Bug: Test Script Ran Wrong 403 Link Test
+**Date:** 2025-12-28
+**Problem:** The test script `/tmp/test_full_six.py` matched the wrong issue when searching for "403" - it found a different 403 link than intended.
+**Fix:** Make search criteria more specific (include part of the URL or more context).
+
+### Bug: Apostrophe Escaping Breaking HTML
+**Date:** 2025-12-28
+**Problem:** Weird escaping is happening with apostrophes and it's corrupting the HTML in Drupal content. Appears on multiple fixes.
+**Root cause:** Likely double-escaping or incorrect handling of single quotes in the PHP/Drush command that updates content.
+**Example:** Check revision diffs in issues #134-137.
+
 ### Bug: Pages List Not Collapsible
 **Problem:** The "Pages Crawled" section toggle doesn't work in HTML reports.
 
