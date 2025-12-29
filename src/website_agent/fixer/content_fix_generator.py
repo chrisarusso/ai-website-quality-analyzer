@@ -563,7 +563,9 @@ if (!$para) {{
     return;
 }}
 
-$para->set($field_name, $new_content);
+// Preserve the text format (full_html, basic_html, etc.)
+$format = $para->get($field_name)->format ?? "full_html";
+$para->set($field_name, ["value" => $new_content, "format" => $format]);
 $para->setNewRevision(TRUE);
 $para->save();
 
@@ -1050,7 +1052,9 @@ Return ONLY valid JSON, no other text."""
 $para_storage = \\Drupal::entityTypeManager()->getStorage("paragraph");
 $para = $para_storage->load({para_id});
 if ($para) {{
-    $para->set("{field_name}", "{escaped_content}");
+    // Preserve the text format (full_html, basic_html, etc.)
+    $format = $para->get("{field_name}")->format ?? "full_html";
+    $para->set("{field_name}", ["value" => "{escaped_content}", "format" => $format]);
     $para->setNewRevision(TRUE);
     $para->save();
 

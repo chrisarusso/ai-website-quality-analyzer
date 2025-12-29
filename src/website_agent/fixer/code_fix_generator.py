@@ -369,23 +369,25 @@ class CodeFixGenerator:
 **Issue:** {issue_title}
 **Category:** {category}
 
-## Rules
+## CRITICAL RULES
 1. Find "{original_value}" in the excerpt above
-2. Replace it with "{proposed_value}"
-3. Return ONLY the fixed lines (with their line numbers preserved)
-4. Do NOT change anything else - return only lines that need changes
+2. Replace ONLY that exact text with "{proposed_value}"
+3. Return the COMPLETE line(s) that changed - the ENTIRE line from start to end
+4. PRESERVE all leading whitespace, indentation, HTML tags, and other content
+5. ONLY change the specific text mentioned - nothing else on the line
+
+IMPORTANT: Each line value must be the COMPLETE line content, not just the changed portion.
 
 Return JSON:
 {{
     "fixed_lines": {{
-        "114": "the fixed content of line 114",
-        "115": "the fixed content of line 115 if changed"
+        "259": "          <p>The complete line 259 with all original indentation and content, just with the fix applied</p>"
     }},
     "explanation": "Changed {original_value} to {proposed_value}",
     "confidence": 0.9
 }}
 
-Return ONLY valid JSON with the line numbers and their fixed content."""
+Return ONLY valid JSON with the line numbers and their COMPLETE line content."""
         else:
             prompt = f"""You are a code fixer. Fix the specified text in this file.
 

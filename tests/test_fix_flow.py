@@ -420,5 +420,198 @@ class TestOrchestratorFlow:
             assert created_issue_body["element"] == issue_data["element"]
 
 
+class TestFullSixFixes:
+    """Integration test: Run all 6 test fixes against live API.
+
+    This tests the complete fix flow including:
+    - 3 spelling fixes (crypo, mayconfuse, ROT)
+    - 2 grammar fixes (subject-verb agreement, verb tense)
+    - 1 link fix (NYTimes 403)
+
+    Requires:
+    - API running on localhost:8003
+    - Scan 7dc37550 to exist with the test issues
+    - Drupal demo-agent environment to be accessible
+    """
+
+    # The 6 test cases
+    TESTS = [
+        {"category": "spelling", "search": "crypo", "desc": "crypo -> crypto",
+         "instructions": "Fix the typo 'crypo' to 'crypto'"},
+        {"category": "spelling", "search": "mayconfuse", "desc": "mayconfuse -> may confuse",
+         "instructions": "Fix 'mayconfuse' to 'may confuse'"},
+        {"category": "spelling", "search": "ROT", "desc": "ROT -> ROI (code)",
+         "instructions": "Fix 'ROT' to 'ROI'"},
+        {"category": "grammar", "search": "application run", "desc": "Subject-verb agreement",
+         "instructions": "Fix the subject-verb agreement error"},
+        {"category": "grammar", "search": "verb tense", "desc": "Verb tense fix",
+         "instructions": "Fix the verb tense error"},
+        {"category": "links", "search": "nytimes", "desc": "NYTimes 403 link",
+         "instructions": "Remove the link but keep the text '$392M settlement' as plain text."},
+    ]
+
+    API_BASE = "http://localhost:8003"
+    SCAN_ID = "7dc37550"
+    GITHUB_REPO = "savaslabs/poc-savaslabs.com"
+
+    @pytest.fixture
+    def check_api(self):
+        """Check if API is running."""
+        import requests
+        try:
+            resp = requests.get(f"{self.API_BASE}/", timeout=2)
+            if resp.status_code != 200:
+                pytest.skip("API not running on port 8003")
+        except:
+            pytest.skip("API not running on port 8003")
+
+    def test_find_all_six_issues(self, check_api):
+        """Test that all 6 test issues can be found in the scan."""
+        import requests
+        import hashlib
+
+        resp = requests.get(f"{self.API_BASE}/api/scan/{self.SCAN_ID}/issues")
+        if resp.status_code != 200:
+            pytest.skip(f"Scan {self.SCAN_ID} not found")
+
+        issues_by_cat = resp.json().get("issues_by_category", {})
+
+        found_count = 0
+        for test in self.TESTS:
+            found = None
+            for issue in issues_by_cat.get(test["category"], []):
+                title = issue.get("title", "").lower()
+                element = issue.get("element", "").lower()
+                search = test["search"].lower()
+                if search in title or search in element:
+                    found = issue
+                    break
+
+            if found:
+                found_count += 1
+            else:
+                print(f"NOT FOUND: {test['desc']}")
+
+        assert found_count == 6, f"Expected 6 issues, found {found_count}"
+
+    def test_submit_and_complete_all_fixes(self, check_api):
+        """Submit all 6 fixes and wait for completion.
+
+        This is a long-running integration test that:
+        1. Finds all 6 issues from the scan
+        2. Submits them to /api/fix
+        3. Polls for completion (up to 5 minutes)
+        4. Verifies all 6 succeeded
+        """
+        import requests
+        import hashlib
+        import time
+
+        # Get issues
+        resp = requests.get(f"{self.API_BASE}/api/scan/{self.SCAN_ID}/issues")
+        issues_by_cat = resp.json().get("issues_by_category", {})
+
+        # Find and prepare all issues
+        fix_issues = []
+        for test in self.TESTS:
+            found = None
+            for issue in issues_by_cat.get(test["category"], []):
+                title = issue.get("title", "").lower()
+                element = issue.get("element", "").lower()
+                search = test["search"].lower()
+                if search in title or search in element:
+                    found = issue
+                    break
+
+            if not found:
+                pytest.skip(f"Issue not found: {test['desc']}")
+
+            # Generate issue ID
+            key = f"{found.get('category')}:{found.get('title')}"
+            issue_id = hashlib.md5(key.encode()).hexdigest()[:12]
+
+            # Parse original/proposed values
+            element = found.get("element", "")
+            orig, prop = "", ""
+
+            spell_match = re.search(r'"([^"]+)"\s*→\s*"([^"]+)"', element)
+            if spell_match:
+                orig, prop = spell_match.group(1), spell_match.group(2)
+
+            gram_orig = re.search(r'Original:\s*"([^"]+)"', element)
+            gram_sugg = re.search(r'Suggested:\s*"([^"]+)"', element)
+            if gram_orig:
+                orig = gram_orig.group(1)
+            if gram_sugg:
+                prop = gram_sugg.group(1)
+
+            # For links, extract the anchor tag
+            if test["category"] == "links" and not orig:
+                link_match = re.search(r'(<a[^>]*>.*?</a>)', element, re.IGNORECASE)
+                if link_match:
+                    orig = link_match.group(1)
+                    prop = re.sub(r'<a[^>]*>(.*?)</a>', r'\1', orig)
+
+            fix_issues.append({
+                "issue_id": issue_id,
+                "category": found.get("category"),
+                "severity": found.get("severity"),
+                "title": found.get("title"),
+                "url": found.get("url"),
+                "element": found.get("element"),
+                "recommendation": found.get("recommendation"),
+                "user_instructions": test["instructions"],
+                "original_value": orig,
+                "proposed_value": prop,
+            })
+
+        assert len(fix_issues) == 6, f"Expected 6 issues, got {len(fix_issues)}"
+
+        # Submit fix request
+        fix_request = {
+            "scan_id": self.SCAN_ID,
+            "github_repo": self.GITHUB_REPO,
+            "issues": fix_issues,
+        }
+
+        resp = requests.post(f"{self.API_BASE}/api/fix", json=fix_request, timeout=60)
+        submit_result = resp.json()
+        batch_id = submit_result.get("fix_batch_id")
+        assert batch_id, "No batch_id returned"
+
+        # Poll for completion (up to 5 minutes)
+        start_time = time.time()
+        for i in range(100):
+            time.sleep(3)
+
+            try:
+                resp = requests.get(f"{self.API_BASE}/api/fix/{batch_id}/status", timeout=60)
+                status = resp.json()
+            except requests.exceptions.Timeout:
+                continue
+
+            fixes = status.get("fixes", [])
+            terminal_states = ["applied", "draft_created", "failed", "pr_created"]
+            completed = sum(1 for f in fixes if f.get("status") in terminal_states)
+
+            if completed == len(fixes):
+                # Verify results
+                succeeded = sum(1 for f in fixes
+                               if f.get("status") in ["draft_created", "pr_created", "applied"])
+
+                # Check batching worked (should have 2 Drupal revisions for 4 content fixes)
+                revision_urls = set()
+                for fix in fixes:
+                    if fix.get("drupal_revision_url"):
+                        revision_urls.add(fix["drupal_revision_url"])
+
+                assert succeeded == 6, f"Expected 6 successes, got {succeeded}"
+                # With batching, 4 content fixes should create ≤2 revisions
+                assert len(revision_urls) <= 2, f"Expected ≤2 revisions, got {len(revision_urls)}"
+                return
+
+        pytest.fail("Timeout: Fixes did not complete in 5 minutes")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
