@@ -1,6 +1,6 @@
 # Website Quality Agent - Status
 
-**Last Updated:** 2025-12-28
+**Last Updated:** 2025-12-28 (Fix Flow Complete)
 
 ## Setup Requirements
 
@@ -74,6 +74,32 @@ Server connection details are configured in `.env`:
 | **Remote execution** | Complete | `run-remote.sh` syncs and runs on remote |
 | **Unlimited crawling** | Complete | `--all` flag or `--max-pages 0` for no limit |
 | **Slack notifications** | Complete | Sends on scan start, completion, and failure (CLI and web app) |
+| **Fix API** | Complete | `/api/fix` endpoint processes content and code fixes |
+| **Content fix generator** | Complete | Updates Drupal paragraphs via terminus drush, batches by page |
+| **Code fix generator** | Complete | Creates GitHub PRs with LLM-generated template fixes |
+| **Fix orchestrator** | Complete | Classifies fixes, routes to appropriate generator |
+| **Integration tests** | Complete | `TestFullSixFixes` runs 6 test fixes with verification |
+
+### Fix Flow Status
+
+The "Run Fixes" button in HTML reports is fully functional:
+
+| Fix Type | Status | How It Works |
+|----------|--------|--------------|
+| **Spelling (content)** | ✅ Working | Updates Drupal paragraph fields, creates draft revision |
+| **Grammar (content)** | ✅ Working | Same as spelling, batches multiple fixes per page |
+| **Link removal (content)** | ✅ Working | Removes link tags, preserves inner text |
+| **Spelling (code/template)** | ✅ Working | Creates GitHub PR with single-line fix |
+| **Grammar (code/template)** | ✅ Working | Same as spelling, preserves line boundaries |
+
+**Known Issue:** Apostrophe escaping - content fixes add backslashes before apostrophes (e.g., `it\'s`). See BACKLOG.md.
+
+**Test Command:**
+```bash
+# Reset demo-agent DB and run all 6 test fixes
+terminus env:clone-content savas-labs.live demo-agent --db-only --yes
+uv run pytest tests/test_fix_flow.py::TestFullSixFixes::test_submit_and_complete_all_fixes -v -s
+```
 
 ### What's Not Yet Built
 
@@ -91,6 +117,14 @@ Server connection details are configured in `.env`:
 ---
 
 ## Recent Changes
+
+**2025-12-28:**
+- **Fix flow complete:** All 6 test fixes pass (4 content, 2 code)
+- **Content fixes:** Format preservation fixed (basic_html, full_html retained)
+- **Code fixes:** LLM prompt fixed to preserve line boundaries (no more multi-line merging)
+- **Test improvements:** Added detailed output with verification links and drush uli
+- **Batching:** Multiple content fixes per page create single Drupal revision
+- **Known bug:** Apostrophe escaping still adds backslashes (documented in BACKLOG.md)
 
 **2025-12-27:**
 - Added Slack notifications to core scan functionality (works for CLI and web app)
