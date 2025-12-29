@@ -53,6 +53,7 @@ class FixClassifier:
         ("links", "Broken link", FixType.CONTENT_FIX),  # Default broken links to content fix
         ("links", "Link returns 404", FixType.CONTENT_FIX),
         ("links", "Link returns 403", FixType.CONTENT_FIX),
+        ("links", "Forbidden link", FixType.CONTENT_FIX),  # 403 format: "Forbidden link (403): ..."
 
         # NOT_FIXABLE: External resources
         ("links", "External broken link", FixType.NOT_FIXABLE),
