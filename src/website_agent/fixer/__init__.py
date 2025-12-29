@@ -11,9 +11,18 @@ This module handles:
 from .classifier import FixClassifier
 from .code_fix_generator import CodeFix, CodeFixGenerator, CodeFixResult
 from .content_fix_generator import ContentFix, ContentFixGenerator, ContentFixResult, generate_content_fix_sync
-from .drupal_fixer import DrupalFixer, DrupalFixResult, fix_spelling_sync, fix_broken_link_sync, rollback_revision_sync
 from .github_client import CodeSearchResult, GitHubClient, GitHubClientError, GitHubIssue, GitHubPR
 from .orchestrator import FixOrchestrator, FixResult
+
+# Optional: DrupalFixer requires drupal-editor-agent package
+try:
+    from .drupal_fixer import DrupalFixer, DrupalFixResult, fix_spelling_sync, fix_broken_link_sync, rollback_revision_sync
+except ImportError:
+    DrupalFixer = None
+    DrupalFixResult = None
+    fix_spelling_sync = None
+    fix_broken_link_sync = None
+    rollback_revision_sync = None
 from .run_tracker import (
     FixRunTracker,
     FixChange,

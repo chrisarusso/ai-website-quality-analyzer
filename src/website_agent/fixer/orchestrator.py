@@ -46,7 +46,17 @@ from ..storage import SQLiteStore
 from .classifier import FixClassifier
 from .code_fix_generator import CodeFixGenerator, CodeFixResult
 from .content_fix_generator import ContentFixGenerator, generate_content_fix_sync
-from .drupal_fixer import DrupalFixer, DrupalFixResult, fix_spelling_sync, fix_broken_link_sync, rollback_revision_sync
+# Optional: DrupalFixer requires drupal-editor-agent package
+try:
+    from .drupal_fixer import DrupalFixer, DrupalFixResult, fix_spelling_sync, fix_broken_link_sync, rollback_revision_sync
+    DRUPAL_FIXER_AVAILABLE = True
+except ImportError:
+    DrupalFixer = None
+    DrupalFixResult = None
+    fix_spelling_sync = None
+    fix_broken_link_sync = None
+    rollback_revision_sync = None
+    DRUPAL_FIXER_AVAILABLE = False
 from .github_client import GitHubClient, GitHubClientError, GitHubIssue
 from .run_tracker import get_tracker
 

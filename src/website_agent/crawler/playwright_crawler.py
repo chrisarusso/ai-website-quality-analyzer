@@ -1,6 +1,7 @@
 """Playwright-based crawler with anti-bot stealth settings.
 
 Primary crawler that handles JavaScript-rendered sites and evades bot detection.
+Uses playwright-stealth for advanced bot evasion.
 """
 
 import asyncio
@@ -12,6 +13,7 @@ from typing import Optional
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
+from playwright_stealth import Stealth
 
 from ..config import CRAWLER_DELAY, CRAWLER_MAX_PAGES, CRAWLER_TIMEOUT, CRAWLER_USER_AGENT
 
@@ -132,26 +134,12 @@ class PlaywrightCrawler:
             },
         )
 
-        # Inject stealth scripts to hide automation
-        await self._context.add_init_script("""
-            // Hide webdriver property
-            Object.defineProperty(navigator, 'webdriver', {
-                get: () => undefined
-            });
-
-            // Mock plugins
-            Object.defineProperty(navigator, 'plugins', {
-                get: () => [1, 2, 3, 4, 5]
-            });
-
-            // Mock languages
-            Object.defineProperty(navigator, 'languages', {
-                get: () => ['en-US', 'en']
-            });
-
-            // Add chrome object
-            window.chrome = { runtime: {} };
-        """)
+        # Apply playwright-stealth at the context level for maximum evasion
+        stealth = Stealth(
+            navigator_platform_override="MacIntel",  # Match our user agent
+            navigator_vendor_override="Google Inc.",
+        )
+        await stealth.apply_stealth_async(self._context)
 
     async def _close_browser(self):
         """Close browser and cleanup."""
@@ -270,6 +258,25 @@ class PlaywrightCrawler:
             final_url_normalized = self._normalize_url(final_url)
 
             status_code = response.status if response else 0
+
+            # Check for Cloudflare challenge and wait for it to complete
+            if status_code == 403:
+                # Check if this is a Cloudflare challenge page
+                html_check = await page.content()
+                if "cf-mitigated" in str(response.headers) or "challenge" in html_check.lower() or "cloudflare" in html_check.lower():
+                    logger.info(f"Cloudflare challenge detected on {url}, waiting for resolution...")
+                    # Wait for the challenge to complete (up to 15 seconds)
+                    for _ in range(15):
+                        await asyncio.sleep(1)
+                        # Check if we've been redirected or the content changed
+                        current_html = await page.content()
+                        if "challenge" not in current_html.lower() and "cloudflare" not in current_html.lower():
+                            logger.info(f"Cloudflare challenge resolved for {url}")
+                            status_code = 200  # Challenge passed
+                            break
+                    else:
+                        logger.warning(f"Cloudflare challenge did not resolve for {url}")
+
             html = await page.content()
 
             # Extract visible text
