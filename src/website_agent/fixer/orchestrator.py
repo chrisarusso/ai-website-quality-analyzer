@@ -662,6 +662,10 @@ class FixOrchestrator:
     ) -> list[FixResult]:
         """Process all fixes in a batch.
 
+        Content fixes are grouped by target URL so multiple fixes on the same
+        node are applied in a single Drupal revision. This prevents multiple
+        revisions for the same node when batch contains several related fixes.
+
         Automatically tracks changes for rollback capability.
 
         Args:
@@ -680,13 +684,234 @@ class FixOrchestrator:
         fixes = self.store.get_fixes_by_batch(batch_id)
         results = []
 
+        # Separate content fixes from other types for batching by node
+        content_fixes_by_url: dict[str, list[tuple[ProposedFix, dict]]] = {}
+        other_fixes: list[tuple[ProposedFix, dict]] = []
+
         for fix in fixes:
             issue_data = issue_data_map.get(fix.id, {})
+            fix_type = fix.fix_type
+            if isinstance(fix_type, str):
+                fix_type = FixType(fix_type)
+
+            if fix_type == FixType.CONTENT_FIX:
+                # Group content fixes by their target URL
+                page_url = issue_data.get("url", "")
+                if page_url:
+                    if page_url not in content_fixes_by_url:
+                        content_fixes_by_url[page_url] = []
+                    content_fixes_by_url[page_url].append((fix, issue_data))
+                else:
+                    # No URL - process individually
+                    other_fixes.append((fix, issue_data))
+            else:
+                # CODE_FIX, MANUAL_ONLY, NOT_FIXABLE - process individually
+                other_fixes.append((fix, issue_data))
+
+        # Process grouped content fixes by URL (one revision per node)
+        for page_url, fix_list in content_fixes_by_url.items():
+            if len(fix_list) == 1:
+                # Single fix - use normal processing
+                fix, issue_data = fix_list[0]
+                result = self.process_content_fix(fix, issue_data, github_repo)
+                results.append(result)
+            else:
+                # Multiple fixes for same URL - batch them
+                logger.info(f"Batching {len(fix_list)} content fixes for {page_url}")
+                batch_results = self.process_content_fixes_batched(
+                    fix_list, page_url, github_repo
+                )
+                results.extend(batch_results)
+
+        # Process other fixes individually
+        for fix, issue_data in other_fixes:
             result = self.process_fix(fix, issue_data, github_repo)
             results.append(result)
 
         # End the run and save to disk
         run_file = tracker.end_run()
         logger.info(f"Fix run saved to: {run_file}")
+
+        return results
+
+    def process_content_fixes_batched(
+        self,
+        fix_list: list[tuple[ProposedFix, dict]],
+        page_url: str,
+        github_repo: Optional[str] = None,
+    ) -> list[FixResult]:
+        """Process multiple content fixes for the same node in one revision.
+
+        All fixes targeting the same page URL are applied together, creating
+        a single Drupal revision with all changes.
+
+        Args:
+            fix_list: List of (ProposedFix, issue_data) tuples for the same URL
+            page_url: The target page URL
+            github_repo: Repository for GitHub issue tracking
+
+        Returns:
+            List of FixResult for each fix
+        """
+        results = []
+
+        # First, check if any of these fixes should actually be code fixes
+        # by searching for their text in the codebase
+        content_fixes = []
+        for fix, issue_data in fix_list:
+            search_text = fix.original_value
+            if search_text and self._search_code_for_text(search_text, github_repo):
+                logger.info(f"Text found in code - delegating to code fix: {search_text}")
+                fix.fix_type = FixType.CODE_FIX
+                result = self.process_code_fix(fix, issue_data, github_repo)
+                results.append(result)
+            else:
+                content_fixes.append((fix, issue_data))
+
+        # If no content fixes remain, we're done
+        if not content_fixes:
+            return results
+
+        # Create GitHub issues for all remaining content fixes
+        for fix, issue_data in content_fixes:
+            if not fix.github_issue_url:
+                issue_result = self.create_github_issue_for_fix(fix, issue_data, github_repo)
+                if issue_result.success:
+                    fix.github_issue_url = issue_result.github_issue_url
+                    fix.github_issue_number = issue_result.github_issue_number
+
+        # Attempt batched Drupal fix if available
+        if not self.drupal_available:
+            # No Drupal - return processing status for all
+            for fix, issue_data in content_fixes:
+                self.store.update_fix_status(
+                    fix.id,
+                    status=FixStatus.PROCESSING,
+                    error_message="Drupal integration pending - manual fix required",
+                )
+                results.append(FixResult(
+                    fix_id=fix.id,
+                    success=True,
+                    status=FixStatus.PROCESSING,
+                    message="GitHub issue created, Drupal fix pending",
+                    github_issue_url=fix.github_issue_url,
+                    github_issue_number=fix.github_issue_number,
+                ))
+            return results
+
+        # Build the list of fixes to apply
+        fixes_to_apply = []
+        for fix, issue_data in content_fixes:
+            user_instructions = fix.user_instructions or ""
+            if not user_instructions:
+                if fix.original_value and fix.proposed_value:
+                    user_instructions = f"Change '{fix.original_value}' to '{fix.proposed_value}'"
+                elif self._is_broken_link_issue(issue_data):
+                    user_instructions = f"Fix or remove the broken link: {fix.original_value or 'see issue description'}"
+                elif self._is_spelling_or_grammar_issue(issue_data):
+                    user_instructions = f"Fix the spelling/grammar error"
+
+            fixes_to_apply.append({
+                "fix": fix,
+                "issue_data": issue_data,
+                "title": issue_data.get("title", "Unknown issue"),
+                "description": issue_data.get("description", ""),
+                "category": issue_data.get("category", "unknown"),
+                "original_value": fix.original_value,
+                "proposed_value": fix.proposed_value,
+                "user_instructions": user_instructions,
+            })
+
+        logger.info(f"Applying {len(fixes_to_apply)} batched fixes to {page_url}")
+
+        try:
+            # Use the batched content fix generator
+            from .content_fix_generator import generate_batched_content_fixes_sync
+
+            batch_result = generate_batched_content_fixes_sync(
+                page_url=page_url,
+                fixes=fixes_to_apply,
+            )
+
+            if batch_result.get("success"):
+                revision_url = batch_result.get("revision_url")
+                diff_url = batch_result.get("diff_url")
+                fix_messages = batch_result.get("fix_messages", {})
+
+                # Update all fixes with success
+                for fix, issue_data in content_fixes:
+                    fix_message = fix_messages.get(fix.id, "Fix applied in batch")
+
+                    # Update GitHub issue
+                    try:
+                        with self._get_github_client(github_repo) as client:
+                            if fix.github_issue_number:
+                                diff_section = ""
+                                if diff_url:
+                                    diff_section = f"**View diff (compare changes):** {diff_url}\n\n"
+
+                                client.add_issue_comment(
+                                    fix.github_issue_number,
+                                    "✅ **Drupal Draft Revision Created (Batched)**\n\n"
+                                    f"{fix_message}\n\n"
+                                    f"**Review pending revision at:** {revision_url}\n\n"
+                                    f"{diff_section}"
+                                    f"This fix was applied along with {len(content_fixes) - 1} other fix(es) to the same page.\n\n"
+                                    "The fix has been applied as a draft revision in **`ava_suggestion`** state.\n"
+                                    "A human must review and approve the change before it goes live.\n\n"
+                                    f"*Processed on {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC*"
+                                )
+                    except Exception as e:
+                        logger.warning(f"Failed to update GitHub issue: {e}")
+
+                    self.store.update_fix_status(
+                        fix.id,
+                        status=FixStatus.DRAFT_CREATED,
+                        drupal_revision_url=revision_url,
+                    )
+
+                    results.append(FixResult(
+                        fix_id=fix.id,
+                        success=True,
+                        status=FixStatus.DRAFT_CREATED,
+                        message=fix_message,
+                        github_issue_url=fix.github_issue_url,
+                        github_issue_number=fix.github_issue_number,
+                        drupal_revision_url=revision_url,
+                    ))
+            else:
+                # Batch failed - report error for all fixes
+                error_msg = batch_result.get("error", "Batched fix failed")
+                for fix, issue_data in content_fixes:
+                    self.store.update_fix_status(
+                        fix.id,
+                        status=FixStatus.PROCESSING,
+                        error_message=error_msg,
+                    )
+                    results.append(FixResult(
+                        fix_id=fix.id,
+                        success=False,
+                        status=FixStatus.PROCESSING,
+                        message=f"Batched fix failed: {error_msg}",
+                        github_issue_url=fix.github_issue_url,
+                        github_issue_number=fix.github_issue_number,
+                    ))
+
+        except Exception as e:
+            logger.error(f"Batched content fix error: {e}")
+            for fix, issue_data in content_fixes:
+                self.store.update_fix_status(
+                    fix.id,
+                    status=FixStatus.PROCESSING,
+                    error_message=str(e),
+                )
+                results.append(FixResult(
+                    fix_id=fix.id,
+                    success=False,
+                    status=FixStatus.PROCESSING,
+                    message=f"Batched fix error: {e}",
+                    github_issue_url=fix.github_issue_url,
+                    github_issue_number=fix.github_issue_number,
+                ))
 
         return results
