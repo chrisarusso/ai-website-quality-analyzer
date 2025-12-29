@@ -75,6 +75,30 @@ Future improvements and planned enhancements.
 3. In report, show site-wide section first with deduplicated issues
 4. Remaining per-page issues shown normally
 
+### Report: Group Issues by URL for Fix Selection
+**Problem:** When selecting issues to fix, they're currently listed by category. But the backend now batches fixes by URL (node), so selecting 3 issues from the same page creates 1 revision, while selecting 3 from different pages creates 3 revisions.
+
+**User experience improvement:**
+- When user goes to "Run Fixes" flow, show issues grouped by page URL
+- Display something like:
+  ```
+  /blog/browsers-other-chrome (3 issues)
+    ✓ Spelling: "crypo" → "crypto"
+    ✓ Grammar: "have showed" → "has shown"
+    ✓ Link: Remove NYTimes 403 link
+
+  /blog/effective-mental-framework (1 issue)
+    ✓ Spelling: "mayconfuse" → "may confuse"
+  ```
+- Shows user which fixes will be batched together
+- Could show "1 Drupal revision" or "2 Drupal revisions" preview
+- Helps user understand the impact of their selections
+
+**Implementation:**
+1. In HTML report JS, add "Group by Page" toggle or view
+2. When sending to `/api/fix`, backend already handles batching
+3. Optional: Add "batch preview" endpoint to show what would happen
+
 ### SEO Check Calibration
 **Problem:** Our custom SEO checks are more aggressive than Lighthouse. Some checks flag issues Lighthouse doesn't consider problems, leading to inflated issue counts and potential false positives.
 
