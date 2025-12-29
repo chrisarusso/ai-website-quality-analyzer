@@ -1,0 +1,204 @@
+{
+  "scan_id": "7dc37550",
+  "timestamp": "2025-12-28T17:09:42.395190",
+  "playwright_available": true,
+  "results": [
+    {
+      "test_id": 1,
+      "name": "Spelling: crypo -> crypto",
+      "success": true,
+      "fix_submitted": true,
+      "fix_response": {
+        "id": "f7f5b670-1",
+        "scan_id": "7dc37550",
+        "issue_id": 0,
+        "fix_type": "content_fix",
+        "status": "draft_created",
+        "target_type": null,
+        "target_id": null,
+        "target_field": null,
+        "original_value": "crypo",
+        "proposed_value": "crypto",
+        "user_instructions": "",
+        "confidence": 0.7,
+        "ai_generated": true,
+        "github_issue_url": "https://github.com/savaslabs/poc-savaslabs.com/issues/105",
+        "github_issue_number": 105,
+        "github_pr_url": null,
+        "drupal_revision_url": "http://demo-agent-savas-labs.pantheonsite.io/node/445/revisions/6849/view",
+        "created_at": "2025-12-29T01:03:28.378382",
+        "updated_at": "2025-12-29T01:04:02.352643",
+        "reviewed_at": null,
+        "reviewed_by": null,
+        "error_message": null
+      },
+      "github_verified": false,
+      "drupal_verified": true,
+      "verification_details": {
+        "github_api": {
+          "exists": false,
+          "details": {},
+          "error": "Issue not found"
+        },
+        "playwright": {
+          "success": false,
+          "screenshot_path": "test_results/screenshots/test_1_diff.png",
+          "changes_found": {
+            "additions": [],
+            "deletions": []
+          },
+          "error": "Expected change not found in diff. Looking for 'crypto'"
+        }
+      },
+      "error": null,
+      "warning": "Expected change not found in diff. Looking for 'crypto'"
+    },
+    {
+      "test_id": 2,
+      "name": "Spelling: mayconfuse -> may confuse",
+      "success": true,
+      "fix_submitted": true,
+      "fix_response": {
+        "id": "735c7fca-1",
+        "scan_id": "7dc37550",
+        "issue_id": 0,
+        "fix_type": "content_fix",
+        "status": "draft_created",
+        "target_type": null,
+        "target_id": null,
+        "target_field": null,
+        "original_value": "mayconfuse",
+        "proposed_value": "may confuse",
+        "user_instructions": "",
+        "confidence": 0.7,
+        "ai_generated": true,
+        "github_issue_url": "https://github.com/savaslabs/poc-savaslabs.com/issues/106",
+        "github_issue_number": 106,
+        "github_pr_url": null,
+        "drupal_revision_url": "http://demo-agent-savas-labs.pantheonsite.io/node/482/revisions/6850/view",
+        "created_at": "2025-12-29T01:04:08.099482",
+        "updated_at": "2025-12-29T01:04:55.445356",
+        "reviewed_at": null,
+        "reviewed_by": null,
+        "error_message": null
+      },
+      "github_verified": false,
+      "drupal_verified": true,
+      "verification_details": {
+        "github_api": {
+          "exists": false,
+          "details": {},
+          "error": "Issue not found"
+        },
+        "playwright": {
+          "success": false,
+          "screenshot_path": "test_results/screenshots/test_2_diff.png",
+          "changes_found": {
+            "additions": [],
+            "deletions": []
+          },
+          "error": "Expected change not found in diff. Looking for 'may confuse'"
+        }
+      },
+      "error": null,
+      "warning": "Expected change not found in diff. Looking for 'may confuse'"
+    },
+    {
+      "test_id": 3,
+      "name": "Spelling: ROT -> ROI",
+      "success": false,
+      "fix_submitted": true,
+      "fix_response": null,
+      "github_verified": false,
+      "drupal_verified": false,
+      "verification_details": {},
+      "error": "Fix processing timed out or failed"
+    },
+    {
+      "test_id": 4,
+      "name": "Grammar: application run -> runs",
+      "success": false,
+      "fix_submitted": true,
+      "fix_response": {
+        "id": "a225c3ea-1",
+        "scan_id": "7dc37550",
+        "issue_id": 0,
+        "fix_type": "content_fix",
+        "status": "processing",
+        "target_type": null,
+        "target_id": null,
+        "target_field": null,
+        "original_value": null,
+        "proposed_value": null,
+        "user_instructions": "",
+        "confidence": 0.65,
+        "ai_generated": true,
+        "github_issue_url": "https://github.com/savaslabs/poc-savaslabs.com/issues/109",
+        "github_issue_number": 109,
+        "github_pr_url": null,
+        "drupal_revision_url": null,
+        "created_at": "2025-12-29T01:07:27.114221",
+        "updated_at": "2025-12-29T01:07:34.752651",
+        "reviewed_at": null,
+        "reviewed_by": null,
+        "error_message": "Generated fix was identical to original"
+      },
+      "github_verified": false,
+      "drupal_verified": false,
+      "verification_details": {},
+      "error": "Fix stuck in processing: Generated fix was identical to original",
+      "message": "GitHub issue created: https://github.com/savaslabs/poc-savaslabs.com/issues/109"
+    },
+    {
+      "test_id": 5,
+      "name": "Grammar: Inconsistent verb tense",
+      "success": false,
+      "fix_submitted": true,
+      "fix_response": {
+        "id": "b2cde0bd-1",
+        "scan_id": "7dc37550",
+        "issue_id": 0,
+        "fix_type": "content_fix",
+        "status": "processing",
+        "target_type": null,
+        "target_id": null,
+        "target_field": null,
+        "original_value": null,
+        "proposed_value": null,
+        "user_instructions": "",
+        "confidence": 0.65,
+        "ai_generated": true,
+        "github_issue_url": "https://github.com/savaslabs/poc-savaslabs.com/issues/110",
+        "github_issue_number": 110,
+        "github_pr_url": null,
+        "drupal_revision_url": null,
+        "created_at": "2025-12-29T01:07:34.763099",
+        "updated_at": "2025-12-29T01:07:41.300838",
+        "reviewed_at": null,
+        "reviewed_by": null,
+        "error_message": "Generated fix was identical to original"
+      },
+      "github_verified": false,
+      "drupal_verified": false,
+      "verification_details": {},
+      "error": "Fix stuck in processing: Generated fix was identical to original",
+      "message": "GitHub issue created: https://github.com/savaslabs/poc-savaslabs.com/issues/110"
+    },
+    {
+      "test_id": 6,
+      "name": "Broken link: NYTimes 403",
+      "success": false,
+      "fix_submitted": true,
+      "fix_response": null,
+      "github_verified": false,
+      "drupal_verified": false,
+      "verification_details": {},
+      "error": "Fix processing timed out or failed"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 4,
+    "total": 6
+  }
+}

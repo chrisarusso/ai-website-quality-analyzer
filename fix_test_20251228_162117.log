@@ -1,0 +1,333 @@
+2025-12-28 16:21:17,722 - INFO - ======================================================================
+2025-12-28 16:21:17,723 - INFO - FIX FLOW TEST SUITE
+2025-12-28 16:21:17,723 - INFO - Using scan: 7dc37550
+2025-12-28 16:21:17,723 - INFO - API: http://localhost:8003
+2025-12-28 16:21:17,723 - INFO - ======================================================================
+2025-12-28 16:21:18,899 - INFO - Playwright browser initialized
+2025-12-28 16:21:18,900 - INFO - 
+[STEP 1] Verifying scan 7dc37550 exists...
+2025-12-28 16:21:18,908 - INFO -   Scan found: https://demo-agent-savas-labs.pantheonsite.io/blog/effective-mental-framework-llms
+2025-12-28 16:21:18,908 - INFO -   Status: completed, Issues: 102
+2025-12-28 16:21:18,908 - INFO - 
+[STEP 2] Fetching issues from scan...
+2025-12-28 16:21:18,918 - INFO - Found 102 issues across 10 categories
+2025-12-28 16:21:18,918 - INFO - 
+[STEP 3] Running test cases...
+2025-12-28 16:21:18,918 - INFO - 
+============================================================
+2025-12-28 16:21:18,918 - INFO - TEST 1: Spelling: crypo -> crypto
+2025-12-28 16:21:18,918 - INFO - ============================================================
+2025-12-28 16:21:18,918 - INFO -   Found issue: Spelling error: 'crypo'
+2025-12-28 16:21:18,918 - INFO -   URL: https://demo-agent-savas-labs.pantheonsite.io/blog/browsers-other-chrome
+2025-12-28 16:21:18,918 - INFO -   Element: "crypo" → "crypto"
+
+Context:
+"Brave comes with a lot of crypo stuff out of the box. You can turn it ...
+2025-12-28 16:21:18,918 - INFO -   Issue ID: 40a9a5ba985a
+2025-12-28 16:21:18,918 - INFO -   Submitting fix request...
+2025-12-28 16:21:18,932 - INFO -   Fix submitted: batch_id=45659c41
+2025-12-28 16:21:18,932 - INFO -   Initial response: Created 1 fix record(s). Processing in background.
+2025-12-28 16:21:28,938 - WARNING -   Error polling status: HTTPConnectionPool(host='localhost', port=8003): Read timed out. (read timeout=10)
+2025-12-28 16:21:40,949 - WARNING -   Error polling status: HTTPConnectionPool(host='localhost', port=8003): Read timed out. (read timeout=10)
+2025-12-28 16:21:46,710 - INFO -   Batch status: 0/1 complete, 0 failed, 0 in progress
+2025-12-28 16:21:46,710 - INFO -   Draft created in Drupal
+2025-12-28 16:21:46,710 - INFO -   Fix details: {
+  "id": "45659c41-1",
+  "scan_id": "7dc37550",
+  "issue_id": 0,
+  "fix_type": "content_fix",
+  "status": "draft_created",
+  "target_type": null,
+  "target_id": null,
+  "target_field": null,
+  "original_value": "crypo",
+  "proposed_value": "crypto",
+  "user_instructions": "",
+  "confidence": 0.7,
+  "ai_generated": true,
+  "github_issue_url": "https://github.com/savaslabs/poc-savaslabs.com/issues/87",
+  "github_issue_number": 87,
+  "github_pr_url": null,
+  "drupal_revision_url": "http://demo-age
+2025-12-28 16:21:46,710 - INFO -   Drupal revision: http://demo-agent-savas-labs.pantheonsite.io/node/445/revisions/6849/view
+2025-12-28 16:21:46,710 - INFO -   GitHub issue: https://github.com/savaslabs/poc-savaslabs.com/issues/87
+2025-12-28 16:21:46,915 - WARNING -   GitHub issue check failed: Issue not found
+2025-12-28 16:21:46,915 - INFO -   Navigating to: http://demo-agent-savas-labs.pantheonsite.io/node/445/revisions/6849/view
+2025-12-28 16:21:51,753 - INFO -   Screenshot saved: test_results/screenshots/test_1_diff.png
+2025-12-28 16:21:51,767 - INFO -   Screenshot: test_results/screenshots/test_1_diff.png
+2025-12-28 16:21:51,767 - INFO -   Changes detected:
+2025-12-28 16:21:51,767 - INFO -     Additions: []
+2025-12-28 16:21:51,767 - INFO -     Deletions: []
+2025-12-28 16:21:51,767 - WARNING -   WARNING: Expected change not found in diff. Looking for 'crypto'
+2025-12-28 16:21:51,767 - INFO -   PASSED (with warning): Revision created at http://demo-agent-savas-labs.pantheonsite.io/node/445/revisions/6849/view
+2025-12-28 16:21:51,767 - INFO - 
+============================================================
+2025-12-28 16:21:51,767 - INFO - TEST 2: Spelling: mayconfuse -> may confuse
+2025-12-28 16:21:51,767 - INFO - ============================================================
+2025-12-28 16:21:51,767 - INFO -   Found issue: Spelling error: 'mayconfuse'
+2025-12-28 16:21:51,767 - INFO -   URL: https://demo-agent-savas-labs.pantheonsite.io/blog/effective-mental-framework-llms
+2025-12-28 16:21:51,767 - INFO -   Element: "mayconfuse" → "may confuse"
+
+Context:
+"If the LLM needs specific information or data for reference,...
+2025-12-28 16:21:51,767 - INFO -   Issue ID: d7b1f81d866e
+2025-12-28 16:21:51,767 - INFO -   Submitting fix request...
+2025-12-28 16:21:51,776 - INFO -   Fix submitted: batch_id=187173ac
+2025-12-28 16:21:51,776 - INFO -   Initial response: Created 1 fix record(s). Processing in background.
+2025-12-28 16:22:01,781 - WARNING -   Error polling status: HTTPConnectionPool(host='localhost', port=8003): Read timed out. (read timeout=10)
+2025-12-28 16:22:13,790 - WARNING -   Error polling status: HTTPConnectionPool(host='localhost', port=8003): Read timed out. (read timeout=10)
+2025-12-28 16:22:21,729 - INFO -   Batch status: 0/1 complete, 0 failed, 0 in progress
+2025-12-28 16:22:21,729 - INFO -   Draft created in Drupal
+2025-12-28 16:22:21,729 - INFO -   Fix details: {
+  "id": "187173ac-1",
+  "scan_id": "7dc37550",
+  "issue_id": 0,
+  "fix_type": "content_fix",
+  "status": "draft_created",
+  "target_type": null,
+  "target_id": null,
+  "target_field": null,
+  "original_value": "mayconfuse",
+  "proposed_value": "may confuse",
+  "user_instructions": "",
+  "confidence": 0.7,
+  "ai_generated": true,
+  "github_issue_url": "https://github.com/savaslabs/poc-savaslabs.com/issues/88",
+  "github_issue_number": 88,
+  "github_pr_url": null,
+  "drupal_revision_url": "http:
+2025-12-28 16:22:21,729 - INFO -   Drupal revision: http://demo-agent-savas-labs.pantheonsite.io/node/482/revisions/6850/view
+2025-12-28 16:22:21,729 - INFO -   GitHub issue: https://github.com/savaslabs/poc-savaslabs.com/issues/88
+2025-12-28 16:22:21,940 - WARNING -   GitHub issue check failed: Issue not found
+2025-12-28 16:22:21,940 - INFO -   Navigating to: http://demo-agent-savas-labs.pantheonsite.io/node/482/revisions/6850/view
+2025-12-28 16:22:23,028 - INFO -   Screenshot saved: test_results/screenshots/test_2_diff.png
+2025-12-28 16:22:23,038 - INFO -   Screenshot: test_results/screenshots/test_2_diff.png
+2025-12-28 16:22:23,038 - INFO -   Changes detected:
+2025-12-28 16:22:23,038 - INFO -     Additions: []
+2025-12-28 16:22:23,038 - INFO -     Deletions: []
+2025-12-28 16:22:23,038 - WARNING -   WARNING: Expected change not found in diff. Looking for 'may confuse'
+2025-12-28 16:22:23,038 - INFO -   PASSED (with warning): Revision created at http://demo-agent-savas-labs.pantheonsite.io/node/482/revisions/6850/view
+2025-12-28 16:22:23,038 - INFO - 
+============================================================
+2025-12-28 16:22:23,038 - INFO - TEST 3: Spelling: ROT -> ROI
+2025-12-28 16:22:23,038 - INFO - ============================================================
+2025-12-28 16:22:23,038 - INFO -   Found issue: Spelling error: 'ROT'
+2025-12-28 16:22:23,038 - INFO -   URL: https://demo-agent-savas-labs.pantheonsite.io/services/landing/engineering
+2025-12-28 16:22:23,038 - INFO -   Element: "ROT" → "ROI"
+
+Context:
+"We evaluate existing systems, identify issues and opportunities, and craft ...
+2025-12-28 16:22:23,038 - INFO -   Issue ID: b3dd39c2cf60
+2025-12-28 16:22:23,038 - INFO -   Submitting fix request...
+2025-12-28 16:22:23,047 - INFO -   Fix submitted: batch_id=53c221fd
+2025-12-28 16:22:23,047 - INFO -   Initial response: Created 1 fix record(s). Processing in background.
+2025-12-28 16:22:30,129 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:22:30,129 - ERROR -   Fix failed: Generated fix was identical to original
+2025-12-28 16:22:30,129 - INFO -   Fix details: {
+  "id": "53c221fd-1",
+  "scan_id": "7dc37550",
+  "issue_id": 0,
+  "fix_type": "content_fix",
+  "status": "processing",
+  "target_type": null,
+  "target_id": null,
+  "target_field": null,
+  "original_value": "ROT",
+  "proposed_value": "ROI",
+  "user_instructions": "",
+  "confidence": 0.7,
+  "ai_generated": true,
+  "github_issue_url": "https://github.com/savaslabs/poc-savaslabs.com/issues/89",
+  "github_issue_number": 89,
+  "github_pr_url": null,
+  "drupal_revision_url": null,
+  "created_at": "2
+2025-12-28 16:22:30,129 - ERROR -   FAILED: Fix stuck in processing: Generated fix was identical to original
+2025-12-28 16:22:30,130 - INFO -   GitHub issue: https://github.com/savaslabs/poc-savaslabs.com/issues/89
+2025-12-28 16:22:30,130 - INFO - 
+============================================================
+2025-12-28 16:22:30,130 - INFO - TEST 4: Grammar: application run -> runs
+2025-12-28 16:22:30,130 - INFO - ============================================================
+2025-12-28 16:22:30,130 - INFO -   Found issue: Grammar issue: Subject-verb agreement
+2025-12-28 16:22:30,130 - INFO -   URL: https://demo-agent-savas-labs.pantheonsite.io/services/landing/engineering
+2025-12-28 16:22:30,130 - INFO -   Element: Original: "we ensure your application run smoothly"
+Suggested: "we ensure your application runs smoo...
+2025-12-28 16:22:30,130 - INFO -   Issue ID: 5ece5da35a07
+2025-12-28 16:22:30,130 - INFO -   Submitting fix request...
+2025-12-28 16:22:30,137 - INFO -   Fix submitted: batch_id=d567fdfb
+2025-12-28 16:22:30,137 - INFO -   Initial response: Created 1 fix record(s). Processing in background.
+2025-12-28 16:22:37,503 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:22:37,503 - ERROR -   Fix failed: Generated fix was identical to original
+2025-12-28 16:22:37,504 - INFO -   Fix details: {
+  "id": "d567fdfb-1",
+  "scan_id": "7dc37550",
+  "issue_id": 0,
+  "fix_type": "content_fix",
+  "status": "processing",
+  "target_type": null,
+  "target_id": null,
+  "target_field": null,
+  "original_value": null,
+  "proposed_value": null,
+  "user_instructions": "",
+  "confidence": 0.65,
+  "ai_generated": true,
+  "github_issue_url": "https://github.com/savaslabs/poc-savaslabs.com/issues/90",
+  "github_issue_number": 90,
+  "github_pr_url": null,
+  "drupal_revision_url": null,
+  "created_at": "20
+2025-12-28 16:22:37,504 - ERROR -   FAILED: Fix stuck in processing: Generated fix was identical to original
+2025-12-28 16:22:37,504 - INFO -   GitHub issue: https://github.com/savaslabs/poc-savaslabs.com/issues/90
+2025-12-28 16:22:37,504 - INFO - 
+============================================================
+2025-12-28 16:22:37,504 - INFO - TEST 5: Grammar: Inconsistent verb tense
+2025-12-28 16:22:37,504 - INFO - ============================================================
+2025-12-28 16:22:37,504 - INFO -   Found issue: Grammar issue: Inconsistent verb tense
+2025-12-28 16:22:37,504 - INFO -   URL: https://demo-agent-savas-labs.pantheonsite.io/blog/browsers-other-chrome
+2025-12-28 16:22:37,504 - INFO -   Element: Original: "Brave was created by Brendan Eich (the original creator of JavaScript) after leaving Mozi...
+2025-12-28 16:22:37,504 - INFO -   Issue ID: 90ad8dc98216
+2025-12-28 16:22:37,504 - INFO -   Submitting fix request...
+2025-12-28 16:22:37,513 - INFO -   Fix submitted: batch_id=a0c85d3e
+2025-12-28 16:22:37,513 - INFO -   Initial response: Created 1 fix record(s). Processing in background.
+2025-12-28 16:22:44,361 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:22:44,361 - ERROR -   Fix failed: Generated fix was identical to original
+2025-12-28 16:22:44,361 - INFO -   Fix details: {
+  "id": "a0c85d3e-1",
+  "scan_id": "7dc37550",
+  "issue_id": 0,
+  "fix_type": "content_fix",
+  "status": "processing",
+  "target_type": null,
+  "target_id": null,
+  "target_field": null,
+  "original_value": null,
+  "proposed_value": null,
+  "user_instructions": "",
+  "confidence": 0.65,
+  "ai_generated": true,
+  "github_issue_url": "https://github.com/savaslabs/poc-savaslabs.com/issues/91",
+  "github_issue_number": 91,
+  "github_pr_url": null,
+  "drupal_revision_url": null,
+  "created_at": "20
+2025-12-28 16:22:44,361 - ERROR -   FAILED: Fix stuck in processing: Generated fix was identical to original
+2025-12-28 16:22:44,361 - INFO -   GitHub issue: https://github.com/savaslabs/poc-savaslabs.com/issues/91
+2025-12-28 16:22:44,361 - INFO - 
+============================================================
+2025-12-28 16:22:44,361 - INFO - TEST 6: Broken link: NYTimes 403
+2025-12-28 16:22:44,361 - INFO - ============================================================
+2025-12-28 16:22:44,361 - INFO -   Found issue: Forbidden link (403): https://www.nytimes.com/2022/11/14/technology/goog
+2025-12-28 16:22:44,362 - INFO -   URL: https://demo-agent-savas-labs.pantheonsite.io/blog/browsers-other-chrome
+2025-12-28 16:22:44,362 - INFO -   Element: <a href="https://www.nytimes.com/2022/11/14/technology/google-privacy-settlement.html">$392M settlem...
+2025-12-28 16:22:44,362 - INFO -   Issue ID: c01561efc9f1
+2025-12-28 16:22:44,362 - INFO -   Submitting fix request...
+2025-12-28 16:22:44,369 - INFO -   Fix submitted: batch_id=df53b39b
+2025-12-28 16:22:44,369 - INFO -   Initial response: Created 1 fix record(s). Processing in background.
+2025-12-28 16:22:44,880 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:22:46,891 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:22:48,900 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:22:50,911 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:22:52,922 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:22:54,933 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:22:56,941 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:22:58,952 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:00,963 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:02,973 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:04,984 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:06,995 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:09,004 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:11,012 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:13,022 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:15,029 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:17,037 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:19,048 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:21,058 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:23,069 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:25,079 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:27,090 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:29,101 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:31,111 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:33,121 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:35,130 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:37,137 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:39,147 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:41,158 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:43,168 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:45,178 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:47,190 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:49,200 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:51,209 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:53,220 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:55,231 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:57,241 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:23:59,249 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:01,260 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:03,271 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:05,278 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:07,288 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:09,299 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:11,307 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:13,319 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:15,326 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:17,336 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:19,347 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:21,353 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:23,364 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:25,374 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:27,383 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:29,393 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:31,399 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:33,406 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:35,417 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:37,424 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:39,431 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:41,441 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:43,449 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:24:45,452 - ERROR -   Timeout waiting for fix batch df53b39b
+2025-12-28 16:24:45,452 - ERROR -   FAILED: Fix processing timed out or failed
+2025-12-28 16:24:45,452 - INFO - 
+======================================================================
+2025-12-28 16:24:45,452 - INFO - TEST SUMMARY
+2025-12-28 16:24:45,452 - INFO - ======================================================================
+2025-12-28 16:24:45,452 - INFO - 
+  [✓] Test 1: Spelling: crypo -> crypto - PASS
+2025-12-28 16:24:45,452 - INFO -       PROOF:
+2025-12-28 16:24:45,452 - INFO -         → Drupal revision: http://demo-agent-savas-labs.pantheonsite.io/node/445/revisions/6849/view
+2025-12-28 16:24:45,452 - INFO -         → GitHub issue: https://github.com/savaslabs/poc-savaslabs.com/issues/87
+2025-12-28 16:24:45,452 - INFO -         → Change: "crypo" → "crypto"
+2025-12-28 16:24:45,452 - INFO -       ⚠ Warning: Expected change not found in diff. Looking for 'crypto'
+2025-12-28 16:24:45,452 - INFO -         → Screenshot: test_results/screenshots/test_1_diff.png
+2025-12-28 16:24:45,452 - INFO - 
+  [✓] Test 2: Spelling: mayconfuse -> may confuse - PASS
+2025-12-28 16:24:45,453 - INFO -       PROOF:
+2025-12-28 16:24:45,453 - INFO -         → Drupal revision: http://demo-agent-savas-labs.pantheonsite.io/node/482/revisions/6850/view
+2025-12-28 16:24:45,453 - INFO -         → GitHub issue: https://github.com/savaslabs/poc-savaslabs.com/issues/88
+2025-12-28 16:24:45,453 - INFO -         → Change: "mayconfuse" → "may confuse"
+2025-12-28 16:24:45,453 - INFO -       ⚠ Warning: Expected change not found in diff. Looking for 'may confuse'
+2025-12-28 16:24:45,453 - INFO -         → Screenshot: test_results/screenshots/test_2_diff.png
+2025-12-28 16:24:45,453 - INFO - 
+  [✗] Test 3: Spelling: ROT -> ROI - FAIL
+2025-12-28 16:24:45,453 - INFO -       ERROR DETAILS:
+2025-12-28 16:24:45,453 - INFO -         → Attempted: "ROT" → "ROI"
+2025-12-28 16:24:45,453 - INFO -         → Error: Fix stuck in processing: Generated fix was identical to original
+2025-12-28 16:24:45,453 - INFO -         → Fix status: processing
+2025-12-28 16:24:45,453 - INFO -         → Fix type: content_fix
+2025-12-28 16:24:45,453 - INFO -         → GitHub issue (created): https://github.com/savaslabs/poc-savaslabs.com/issues/89
+2025-12-28 16:24:45,453 - INFO - 
+  [✗] Test 4: Grammar: application run -> runs - FAIL
+2025-12-28 16:24:45,453 - INFO -       ERROR DETAILS:
+2025-12-28 16:24:45,453 - INFO -         → Error: Fix stuck in processing: Generated fix was identical to original
+2025-12-28 16:24:45,453 - INFO -         → Fix status: processing
+2025-12-28 16:24:45,453 - INFO -         → Fix type: content_fix
+2025-12-28 16:24:45,453 - INFO -         → GitHub issue (created): https://github.com/savaslabs/poc-savaslabs.com/issues/90
+2025-12-28 16:24:45,453 - INFO - 
+  [✗] Test 5: Grammar: Inconsistent verb tense - FAIL
+2025-12-28 16:24:45,453 - INFO -       ERROR DETAILS:
+2025-12-28 16:24:45,453 - INFO -         → Error: Fix stuck in processing: Generated fix was identical to original
+2025-12-28 16:24:45,453 - INFO -         → Fix status: processing
+2025-12-28 16:24:45,453 - INFO -         → Fix type: content_fix
+2025-12-28 16:24:45,453 - INFO -         → GitHub issue (created): https://github.com/savaslabs/poc-savaslabs.com/issues/91
+2025-12-28 16:24:45,453 - INFO - 
+  [✗] Test 6: Broken link: NYTimes 403 - FAIL
+2025-12-28 16:24:45,453 - INFO -       ERROR DETAILS:

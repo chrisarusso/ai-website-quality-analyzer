@@ -49,7 +49,14 @@
       "Bash(source:*)",
       "Bash(terminus connection:info:*)",
       "Bash(echo:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(terminus auth:whoami:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(SCAN_ID=7dc37550 uv run python:*)",
+      "Bash(git checkout:*)",
+      "Bash(gh pr list:*)"
     ]
   }
 }

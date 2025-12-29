@@ -201,16 +201,30 @@ class CodeFixGenerator:
         for result in search_results:
             files_checked += 1
             try:
-                # Get file content
-                file_content, file_sha = self.github.get_file_content_local(
-                    result.path,
-                    branch=branch,
-                    pantheon_git_url=pantheon_git_url,
-                )
+                # IMPORTANT: If we searched in Pantheon, we still need to commit to GitHub
+                # So we need to get the file content and SHA from the GitHub target branch
+                if pantheon_git_url:
+                    # Get file from GitHub's target branch (configured via GITHUB_TARGET_BRANCH)
+                    target_branch = os.environ.get("GITHUB_TARGET_BRANCH")
+                    try:
+                        github_content, github_sha = self.github.get_file_content(result.path, ref=target_branch)
+                        file_content = github_content
+                        file_sha = github_sha
+                        logger.info(f"Got {result.path} from GitHub {target_branch or 'default'} (SHA: {github_sha[:8]})")
+                    except Exception as e:
+                        logger.warning(f"Could not get {result.path} from GitHub, skipping: {e}")
+                        continue
+                else:
+                    # Not using Pantheon - get from local clone
+                    file_content, file_sha = self.github.get_file_content_local(
+                        result.path,
+                        branch=branch,
+                        pantheon_git_url=pantheon_git_url,
+                    )
 
                 # Check if file actually contains the text (with HTML-aware matching)
                 if not re.search(html_pattern, file_content, re.IGNORECASE):
-                    logger.debug(f"File {result.path} doesn't match pattern, skipping")
+                    logger.debug(f"File {result.path} doesn't match pattern in GitHub, skipping")
                     continue
 
                 files_matched += 1

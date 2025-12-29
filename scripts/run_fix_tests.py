@@ -71,12 +71,12 @@ TEST_CASES = [
     },
     {
         "id": 3,
-        "name": "Spelling: ROT -> ROI (code fix)",
-        "type": "code_fix",
+        "name": "Spelling: ROT -> ROI",
+        "type": "content_fix",  # Classified as spelling error (content fix)
         "search_title": "ROT",
         "expected_original": "ROT",
         "expected_replacement": "ROI",
-        "verify": "github_pr",
+        "verify": "drupal_revision",  # Should create Drupal revision like other spelling fixes
     },
     {
         "id": 4,
@@ -470,6 +470,69 @@ class FixTestRunner:
                         return issue
         return None
 
+    def wait_for_fix_completion(self, batch_id: str, timeout: int = 120) -> dict | None:
+        """Poll the fix batch status until complete or timeout.
+
+        Returns the first fix from the batch, or None if failed/timeout.
+        """
+        poll_interval = 2  # seconds
+        elapsed = 0
+
+        while elapsed < timeout:
+            try:
+                resp = requests.get(
+                    f"{self.api_base}/api/fix/{batch_id}/status",
+                    timeout=10
+                )
+
+                if resp.status_code != 200:
+                    logger.warning(f"  Status check failed: {resp.status_code}")
+                    time.sleep(poll_interval)
+                    elapsed += poll_interval
+                    continue
+
+                status = resp.json()
+                total = status.get("total", 0)
+                completed = status.get("completed", 0)
+                failed = status.get("failed", 0)
+                pending = status.get("pending", 0)
+                in_progress = status.get("in_progress", 0)
+
+                logger.info(f"  Batch status: {completed}/{total} complete, {failed} failed, {in_progress} in progress")
+
+                # Check if fix has reached a terminal state
+                fixes = status.get("fixes", [])
+                if fixes:
+                    fix = fixes[0]
+                    fix_status = fix.get("status")
+                    error_msg = fix.get("error_message")
+
+                    # Terminal states: applied, draft_created, failed
+                    # Also treat "processing" with error_message as terminal (stuck state)
+                    terminal_states = ["applied", "draft_created", "failed"]
+                    is_terminal = fix_status in terminal_states
+                    is_stuck = fix_status == "processing" and error_msg
+
+                    if is_terminal or is_stuck:
+                        if fix_status == "failed" or is_stuck:
+                            logger.error(f"  Fix failed: {error_msg}")
+                        elif fix_status == "draft_created":
+                            logger.info(f"  Draft created in Drupal")
+                        else:
+                            logger.info(f"  Fix applied successfully")
+                        return fix
+
+                time.sleep(poll_interval)
+                elapsed += poll_interval
+
+            except Exception as e:
+                logger.warning(f"  Error polling status: {e}")
+                time.sleep(poll_interval)
+                elapsed += poll_interval
+
+        logger.error(f"  Timeout waiting for fix batch {batch_id}")
+        return None
+
     def run_test_case(self, test_case, issues):
         """Run a single test case with full verification."""
         test_id = test_case["id"]
@@ -535,20 +598,27 @@ class FixTestRunner:
                 self.results.append(result)
                 return
 
-            fix_result = resp.json()
+            submit_result = resp.json()
             result["fix_submitted"] = True
-            result["fix_response"] = fix_result
-            logger.info(f"  Fix response received")
+            batch_id = submit_result.get("fix_batch_id")
+            logger.info(f"  Fix submitted: batch_id={batch_id}")
+            logger.info(f"  Initial response: {submit_result.get('message')}")
 
-            # Extract URLs from response
-            fixes = fix_result.get("fixes", [])
-            if not fixes:
-                result["error"] = "No fixes returned in response"
+            if not batch_id:
+                result["error"] = "No batch_id returned from fix submission"
                 logger.error(f"  FAILED: {result['error']}")
                 self.results.append(result)
                 return
 
-            fix = fixes[0]
+            # Poll for fix completion
+            fix = self.wait_for_fix_completion(batch_id)
+            if not fix:
+                result["error"] = "Fix processing timed out or failed"
+                logger.error(f"  FAILED: {result['error']}")
+                self.results.append(result)
+                return
+
+            result["fix_response"] = fix
             logger.info(f"  Fix details: {json.dumps(fix, indent=2)[:500]}")
 
             # Verify based on fix type
@@ -623,6 +693,27 @@ class FixTestRunner:
         """Verify Drupal revision was created correctly."""
         revision_url = fix.get("drupal_revision_url") or fix.get("revision_url")
         diff_url = fix.get("diff_url")
+        github_issue_url = fix.get("github_issue_url")
+
+        # Check for fix failure first
+        fix_status = fix.get("status")
+        error_msg = fix.get("error_message")
+
+        if fix_status == "failed":
+            result["error"] = f"Fix failed: {error_msg}"
+            logger.error(f"  FAILED: {result['error']}")
+            return result
+
+        # Handle stuck "processing" state with error message
+        if fix_status == "processing" and error_msg:
+            result["error"] = f"Fix stuck in processing: {error_msg}"
+            result["success"] = False
+            logger.error(f"  FAILED: {result['error']}")
+            # Still show GitHub issue if created
+            if github_issue_url:
+                result["message"] = f"GitHub issue created: {github_issue_url}"
+                logger.info(f"  GitHub issue: {github_issue_url}")
+            return result
 
         if not revision_url:
             result["error"] = "No Drupal revision URL in response"
@@ -630,8 +721,20 @@ class FixTestRunner:
             return result
 
         logger.info(f"  Drupal revision: {revision_url}")
+        if github_issue_url:
+            logger.info(f"  GitHub issue: {github_issue_url}")
         if diff_url:
             logger.info(f"  Diff URL: {diff_url}")
+
+        # Verify GitHub issue exists
+        if github_issue_url:
+            api_check = self.github_verifier.verify_issue_exists(github_issue_url)
+            result["verification_details"]["github_api"] = api_check
+            if api_check["exists"]:
+                logger.info(f"  GitHub issue verified: {api_check['details'].get('title')}")
+                result["github_verified"] = True
+            else:
+                logger.warning(f"  GitHub issue check failed: {api_check.get('error')}")
 
         result["drupal_verified"] = True  # URL exists
 
@@ -674,7 +777,7 @@ class FixTestRunner:
         return result
 
     def print_summary(self):
-        """Print test summary."""
+        """Print test summary with links to proof."""
         logger.info("\n" + "=" * 70)
         logger.info("TEST SUMMARY")
         logger.info("=" * 70)
@@ -685,30 +788,72 @@ class FixTestRunner:
         for result in self.results:
             status = "PASS" if result["success"] else "FAIL"
             icon = "✓" if result["success"] else "✗"
-            logger.info(f"  [{icon}] Test {result['test_id']}: {result['name']} - {status}")
+            logger.info(f"\n  [{icon}] Test {result['test_id']}: {result['name']} - {status}")
 
-            if result.get("message"):
-                logger.info(f"      {result['message']}")
-            if result.get("warning"):
-                logger.info(f"      ⚠ Warning: {result['warning']}")
-            if result.get("error"):
-                logger.info(f"      Error: {result['error']}")
+            # Get fix response for links
+            fix_response = result.get("fix_response", {})
 
-            # Show verification details
-            details = result.get("verification_details", {})
-            if details.get("github_api", {}).get("exists"):
-                pr = details["github_api"]["details"]
-                logger.info(f"      GitHub: {pr.get('changed_files')} files, +{pr.get('additions')}/-{pr.get('deletions')}")
-            if details.get("playwright", {}).get("screenshot_path"):
-                logger.info(f"      Screenshot: {details['playwright']['screenshot_path']}")
+            if result["success"]:
+                # Show proof links for successful tests
+                logger.info(f"      PROOF:")
+                if fix_response.get("drupal_revision_url"):
+                    logger.info(f"        → Drupal revision: {fix_response['drupal_revision_url']}")
+                if fix_response.get("github_issue_url"):
+                    logger.info(f"        → GitHub issue: {fix_response['github_issue_url']}")
+                if fix_response.get("github_pr_url"):
+                    logger.info(f"        → GitHub PR: {fix_response['github_pr_url']}")
+
+                # Show what was changed
+                if fix_response.get("original_value") and fix_response.get("proposed_value"):
+                    logger.info(f"        → Change: \"{fix_response['original_value']}\" → \"{fix_response['proposed_value']}\"")
+
+                if result.get("warning"):
+                    logger.info(f"      ⚠ Warning: {result['warning']}")
+
+                # Show screenshot if available
+                details = result.get("verification_details", {})
+                if details.get("playwright", {}).get("screenshot_path"):
+                    logger.info(f"        → Screenshot: {details['playwright']['screenshot_path']}")
+
+            else:
+                # Show detailed error info for failures
+                logger.info(f"      ERROR DETAILS:")
+
+                # Show the specific error first
+                error_msg = result.get("error", "Unknown error")
+                logger.info(f"        → Error: {error_msg}")
+
+                # Only show fix details if we have a fix_response
+                if fix_response:
+                    # Show what we tried
+                    if fix_response.get("original_value") and fix_response.get("proposed_value"):
+                        logger.info(f"        → Attempted: \"{fix_response['original_value']}\" → \"{fix_response['proposed_value']}\"")
+
+                    # Show fix status and type
+                    if fix_response.get("status"):
+                        logger.info(f"        → Fix status: {fix_response['status']}")
+                    if fix_response.get("fix_type"):
+                        logger.info(f"        → Fix type: {fix_response['fix_type']}")
+
+                    # Still show any links that were created
+                    if fix_response.get("github_issue_url"):
+                        logger.info(f"        → GitHub issue (created): {fix_response['github_issue_url']}")
+                    if fix_response.get("drupal_revision_url"):
+                        logger.info(f"        → Drupal revision: {fix_response['drupal_revision_url']}")
+
+                    # Show error_message from fix if different
+                    if fix_response.get("error_message") and fix_response["error_message"] not in error_msg:
+                        logger.info(f"        → API error: {fix_response['error_message']}")
+                else:
+                    logger.info(f"        → No fix response received (timeout or connection error)")
 
         logger.info("")
-        logger.info(f"Results: {passed} passed, {failed} failed out of {len(self.results)} tests")
+        logger.info("=" * 70)
+        logger.info(f"RESULTS: {passed} passed, {failed} failed out of {len(self.results)} tests")
+        logger.info("=" * 70)
 
         if self.playwright_available:
             logger.info(f"Screenshots saved to: {SCREENSHOTS_DIR}")
-
-        logger.info("=" * 70)
 
         # Save detailed results to JSON
         results_file = f"test_results/fix_test_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"

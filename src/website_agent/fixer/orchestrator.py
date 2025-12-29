@@ -210,9 +210,9 @@ class FixOrchestrator:
         # Get Pantheon git URL for multidev code search
         pantheon_git_url = _get_pantheon_git_url() if search_branch else None
 
-        # PR base branch - always use GitHub's default branch, not Pantheon multidev
-        # Pantheon multidev branches only exist in Pantheon, not GitHub
-        pr_base_branch = None  # Will use repo's default branch (master)
+        # PR base branch - use GITHUB_TARGET_BRANCH if configured
+        # This should match the multidev branch if using Pantheon
+        pr_base_branch = os.environ.get("GITHUB_TARGET_BRANCH")
 
         logger.info(f"Processing code fix for: {title} (search_branch: {search_branch or 'default'}, pr_base: {pr_base_branch or 'default'}, pantheon_git: {'yes' if pantheon_git_url else 'no'})")
 
@@ -313,7 +313,7 @@ class FixOrchestrator:
                         title=f"[Fix] {title}",
                         body="\n".join(pr_body_parts),
                         head=branch_name,
-                        base=pr_base_branch,  # Target GitHub's default branch
+                        base=pr_base_branch,  # Target GITHUB_TARGET_BRANCH (e.g., demo-agent)
                     )
 
                     # Update fix status
@@ -400,13 +400,64 @@ class FixOrchestrator:
             return "broken" in title or "404" in title or "403" in title
         return False
 
+    def _search_code_for_text(
+        self,
+        search_text: str,
+        github_repo: Optional[str] = None,
+    ) -> bool:
+        """Search the code repository for specific text.
+
+        Args:
+            search_text: The text to search for
+            github_repo: Repository to search in
+
+        Returns:
+            True if text was found in code, False otherwise
+        """
+        if not search_text or len(search_text) < 3:
+            return False
+
+        logger.info(f"Searching code for: '{search_text}'")
+
+        # Determine branches for Pantheon multidev support
+        search_branch = os.environ.get("PANTHEON_ENV")
+        if search_branch and search_branch == "live":
+            search_branch = None
+
+        pantheon_git_url = _get_pantheon_git_url() if search_branch else None
+
+        try:
+            with self._get_github_client(github_repo) as client:
+                # Use the GitHub client's template search method directly
+                search_results = client.search_for_text_in_templates(
+                    text=search_text,
+                    branch=search_branch,
+                    pantheon_git_url=pantheon_git_url,
+                )
+
+                if search_results:
+                    logger.info(f"Found '{search_text}' in code: {[r.path for r in search_results[:3]]}")
+                    return True
+                else:
+                    logger.info(f"'{search_text}' not found in code, will try Drupal")
+                    return False
+
+        except Exception as e:
+            logger.warning(f"Code search failed: {e}, will try Drupal")
+            return False
+
     def process_content_fix(
         self,
         fix: ProposedFix,
         issue_data: dict,
         github_repo: Optional[str] = None,
     ) -> FixResult:
-        """Process a CONTENT_FIX by creating a Drupal draft revision.
+        """Process a CONTENT_FIX by first searching code, then Drupal.
+
+        This method searches CODE FIRST before trying the database:
+        1. Search for the text in the code repository (templates)
+        2. If found in code, delegate to process_code_fix() for a PR
+        3. If not found in code, try Drupal for a content revision
 
         Args:
             fix: The proposed fix record
@@ -416,6 +467,16 @@ class FixOrchestrator:
         Returns:
             FixResult with the outcome
         """
+        # STEP 1: Search CODE first before DATABASE
+        # If the text is in a template, we need a code fix (PR), not a content fix
+        search_text = fix.original_value
+        if search_text and self._search_code_for_text(search_text, github_repo):
+            logger.info(f"Text found in code - delegating to code fix: {search_text}")
+            # Reclassify as CODE_FIX and delegate
+            fix.fix_type = FixType.CODE_FIX
+            return self.process_code_fix(fix, issue_data, github_repo)
+
+        # STEP 2: Text not in code - proceed with Drupal content fix
         # First create a GitHub issue for tracking
         if not fix.github_issue_url:
             issue_result = self.create_github_issue_for_fix(fix, issue_data, github_repo)

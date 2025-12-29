@@ -1,0 +1,375 @@
+2025-12-28 16:00:54,807 - INFO - ======================================================================
+2025-12-28 16:00:54,808 - INFO - FIX FLOW TEST SUITE
+2025-12-28 16:00:54,808 - INFO - Using scan: 7dc37550
+2025-12-28 16:00:54,808 - INFO - API: http://localhost:8003
+2025-12-28 16:00:54,808 - INFO - ======================================================================
+2025-12-28 16:00:56,232 - INFO - Playwright browser initialized
+2025-12-28 16:00:56,232 - INFO - 
+[STEP 1] Verifying scan 7dc37550 exists...
+2025-12-28 16:00:56,239 - INFO -   Scan found: https://demo-agent-savas-labs.pantheonsite.io/blog/effective-mental-framework-llms
+2025-12-28 16:00:56,239 - INFO -   Status: completed, Issues: 102
+2025-12-28 16:00:56,239 - INFO - 
+[STEP 2] Fetching issues from scan...
+2025-12-28 16:00:56,249 - INFO - Found 102 issues across 10 categories
+2025-12-28 16:00:56,249 - INFO - 
+[STEP 3] Running test cases...
+2025-12-28 16:00:56,250 - INFO - 
+============================================================
+2025-12-28 16:00:56,250 - INFO - TEST 1: Spelling: crypo -> crypto
+2025-12-28 16:00:56,250 - INFO - ============================================================
+2025-12-28 16:00:56,250 - INFO -   Found issue: Spelling error: 'crypo'
+2025-12-28 16:00:56,250 - INFO -   URL: https://demo-agent-savas-labs.pantheonsite.io/blog/browsers-other-chrome
+2025-12-28 16:00:56,250 - INFO -   Element: "crypo" → "crypto"
+
+Context:
+"Brave comes with a lot of crypo stuff out of the box. You can turn it ...
+2025-12-28 16:00:56,250 - INFO -   Issue ID: 40a9a5ba985a
+2025-12-28 16:00:56,250 - INFO -   Submitting fix request...
+2025-12-28 16:00:56,258 - INFO -   Fix submitted: batch_id=b72f8d8c
+2025-12-28 16:00:56,259 - INFO -   Initial response: Created 1 fix record(s). Processing in background.
+2025-12-28 16:01:06,263 - WARNING -   Error polling status: HTTPConnectionPool(host='localhost', port=8003): Read timed out. (read timeout=10)
+2025-12-28 16:01:18,274 - WARNING -   Error polling status: HTTPConnectionPool(host='localhost', port=8003): Read timed out. (read timeout=10)
+2025-12-28 16:01:20,317 - INFO -   Batch status: 0/1 complete, 0 failed, 0 in progress
+2025-12-28 16:01:20,317 - INFO -   Draft created in Drupal
+2025-12-28 16:01:20,317 - INFO -   Fix details: {
+  "id": "b72f8d8c-1",
+  "scan_id": "7dc37550",
+  "issue_id": 0,
+  "fix_type": "content_fix",
+  "status": "draft_created",
+  "target_type": null,
+  "target_id": null,
+  "target_field": null,
+  "original_value": "crypo",
+  "proposed_value": "crypto",
+  "user_instructions": "",
+  "confidence": 0.7,
+  "ai_generated": true,
+  "github_issue_url": "https://github.com/savaslabs/poc-savaslabs.com/issues/75",
+  "github_issue_number": 75,
+  "github_pr_url": null,
+  "drupal_revision_url": "http://demo-age
+2025-12-28 16:01:20,317 - INFO -   Drupal revision: http://demo-agent-savas-labs.pantheonsite.io/node/445/revisions/6850/view
+2025-12-28 16:01:20,317 - INFO -   GitHub issue: https://github.com/savaslabs/poc-savaslabs.com/issues/75
+2025-12-28 16:01:20,533 - WARNING -   GitHub issue check failed: Issue not found
+2025-12-28 16:01:20,533 - INFO -   Navigating to: http://demo-agent-savas-labs.pantheonsite.io/node/445/revisions/6850/view
+2025-12-28 16:01:23,614 - INFO -   Screenshot saved: test_results/screenshots/test_1_diff.png
+2025-12-28 16:01:23,630 - INFO -   Screenshot: test_results/screenshots/test_1_diff.png
+2025-12-28 16:01:23,630 - INFO -   Changes detected:
+2025-12-28 16:01:23,630 - INFO -     Additions: []
+2025-12-28 16:01:23,630 - INFO -     Deletions: []
+2025-12-28 16:01:23,630 - WARNING -   WARNING: Expected change not found in diff. Looking for 'crypto'
+2025-12-28 16:01:23,630 - INFO -   PASSED (with warning): Revision created at http://demo-agent-savas-labs.pantheonsite.io/node/445/revisions/6850/view
+2025-12-28 16:01:23,630 - INFO - 
+============================================================
+2025-12-28 16:01:23,630 - INFO - TEST 2: Spelling: mayconfuse -> may confuse
+2025-12-28 16:01:23,630 - INFO - ============================================================
+2025-12-28 16:01:23,630 - INFO -   Found issue: Spelling error: 'mayconfuse'
+2025-12-28 16:01:23,630 - INFO -   URL: https://demo-agent-savas-labs.pantheonsite.io/blog/effective-mental-framework-llms
+2025-12-28 16:01:23,630 - INFO -   Element: "mayconfuse" → "may confuse"
+
+Context:
+"If the LLM needs specific information or data for reference,...
+2025-12-28 16:01:23,631 - INFO -   Issue ID: d7b1f81d866e
+2025-12-28 16:01:23,631 - INFO -   Submitting fix request...
+2025-12-28 16:01:23,639 - INFO -   Fix submitted: batch_id=a6988261
+2025-12-28 16:01:23,640 - INFO -   Initial response: Created 1 fix record(s). Processing in background.
+2025-12-28 16:01:33,644 - WARNING -   Error polling status: HTTPConnectionPool(host='localhost', port=8003): Read timed out. (read timeout=10)
+2025-12-28 16:01:45,656 - WARNING -   Error polling status: HTTPConnectionPool(host='localhost', port=8003): Read timed out. (read timeout=10)
+2025-12-28 16:01:57,666 - WARNING -   Error polling status: HTTPConnectionPool(host='localhost', port=8003): Read timed out. (read timeout=10)
+2025-12-28 16:02:06,157 - INFO -   Batch status: 0/1 complete, 0 failed, 0 in progress
+2025-12-28 16:02:06,157 - INFO -   Draft created in Drupal
+2025-12-28 16:02:06,157 - INFO -   Fix details: {
+  "id": "a6988261-1",
+  "scan_id": "7dc37550",
+  "issue_id": 0,
+  "fix_type": "content_fix",
+  "status": "draft_created",
+  "target_type": null,
+  "target_id": null,
+  "target_field": null,
+  "original_value": "mayconfuse",
+  "proposed_value": "may confuse",
+  "user_instructions": "",
+  "confidence": 0.7,
+  "ai_generated": true,
+  "github_issue_url": "https://github.com/savaslabs/poc-savaslabs.com/issues/76",
+  "github_issue_number": 76,
+  "github_pr_url": null,
+  "drupal_revision_url": "http:
+2025-12-28 16:02:06,157 - INFO -   Drupal revision: http://demo-agent-savas-labs.pantheonsite.io/node/482/revisions/6851/view
+2025-12-28 16:02:06,157 - INFO -   GitHub issue: https://github.com/savaslabs/poc-savaslabs.com/issues/76
+2025-12-28 16:02:06,340 - WARNING -   GitHub issue check failed: Issue not found
+2025-12-28 16:02:06,340 - INFO -   Navigating to: http://demo-agent-savas-labs.pantheonsite.io/node/482/revisions/6851/view
+2025-12-28 16:02:07,438 - INFO -   Screenshot saved: test_results/screenshots/test_2_diff.png
+2025-12-28 16:02:07,445 - INFO -   Screenshot: test_results/screenshots/test_2_diff.png
+2025-12-28 16:02:07,445 - INFO -   Changes detected:
+2025-12-28 16:02:07,445 - INFO -     Additions: []
+2025-12-28 16:02:07,445 - INFO -     Deletions: []
+2025-12-28 16:02:07,445 - WARNING -   WARNING: Expected change not found in diff. Looking for 'may confuse'
+2025-12-28 16:02:07,445 - INFO -   PASSED (with warning): Revision created at http://demo-agent-savas-labs.pantheonsite.io/node/482/revisions/6851/view
+2025-12-28 16:02:07,445 - INFO - 
+============================================================
+2025-12-28 16:02:07,445 - INFO - TEST 3: Spelling: ROT -> ROI (code fix)
+2025-12-28 16:02:07,445 - INFO - ============================================================
+2025-12-28 16:02:07,446 - INFO -   Found issue: Spelling error: 'ROT'
+2025-12-28 16:02:07,446 - INFO -   URL: https://demo-agent-savas-labs.pantheonsite.io/services/landing/engineering
+2025-12-28 16:02:07,446 - INFO -   Element: "ROT" → "ROI"
+
+Context:
+"We evaluate existing systems, identify issues and opportunities, and craft ...
+2025-12-28 16:02:07,446 - INFO -   Issue ID: b3dd39c2cf60
+2025-12-28 16:02:07,446 - INFO -   Submitting fix request...
+2025-12-28 16:02:07,454 - INFO -   Fix submitted: batch_id=6db82525
+2025-12-28 16:02:07,454 - INFO -   Initial response: Created 1 fix record(s). Processing in background.
+2025-12-28 16:02:15,229 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:17,236 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:19,246 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:21,255 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:23,265 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:25,275 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:27,285 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:29,294 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:31,305 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:33,312 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:35,322 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:37,330 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:39,341 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:41,350 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:43,360 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:45,369 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:47,380 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:49,391 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:51,400 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:53,410 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:55,420 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:57,431 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:02:59,441 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:01,452 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:03,461 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:05,471 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:07,481 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:09,488 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:11,497 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:13,504 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:15,513 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:17,524 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:19,535 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:21,545 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:23,555 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:25,565 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:27,575 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:29,581 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:31,591 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:33,602 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:35,611 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:37,617 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:39,628 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:41,638 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:43,649 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:45,660 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:47,667 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:49,678 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:51,688 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:53,697 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:55,707 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:57,713 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:03:59,724 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:01,734 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:03,744 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:05,750 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:07,760 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:09,771 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:11,782 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:13,792 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:15,795 - ERROR -   Timeout waiting for fix batch 6db82525
+2025-12-28 16:04:15,796 - ERROR -   FAILED: Fix processing timed out or failed
+2025-12-28 16:04:15,796 - INFO - 
+============================================================
+2025-12-28 16:04:15,796 - INFO - TEST 4: Grammar: application run -> runs
+2025-12-28 16:04:15,796 - INFO - ============================================================
+2025-12-28 16:04:15,796 - INFO -   Found issue: Grammar issue: Subject-verb agreement
+2025-12-28 16:04:15,796 - INFO -   URL: https://demo-agent-savas-labs.pantheonsite.io/services/landing/engineering
+2025-12-28 16:04:15,796 - INFO -   Element: Original: "we ensure your application run smoothly"
+Suggested: "we ensure your application runs smoo...
+2025-12-28 16:04:15,796 - INFO -   Issue ID: 5ece5da35a07
+2025-12-28 16:04:15,796 - INFO -   Submitting fix request...
+2025-12-28 16:04:15,806 - INFO -   Fix submitted: batch_id=d769a1ac
+2025-12-28 16:04:15,806 - INFO -   Initial response: Created 1 fix record(s). Processing in background.
+2025-12-28 16:04:23,199 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:25,210 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:27,216 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:29,223 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:31,234 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:33,243 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:35,250 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:37,260 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:39,271 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:41,279 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:43,290 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:45,300 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:47,307 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:49,315 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:51,326 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:53,337 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:55,347 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:57,358 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:04:59,364 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:01,374 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:03,381 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:05,387 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:07,397 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:09,408 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:11,414 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:13,425 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:15,433 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:17,440 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:19,451 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:21,461 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:23,472 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:25,483 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:27,488 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:29,497 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:31,507 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:33,518 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:35,529 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:37,540 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:39,547 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:41,558 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:43,569 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:45,580 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:47,590 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:49,601 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:51,606 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:53,616 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:55,626 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:57,635 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:05:59,646 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:01,656 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:03,667 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:05,674 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:07,687 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:09,698 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:11,705 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:13,714 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:15,724 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:17,732 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:19,743 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:21,754 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:23,759 - ERROR -   Timeout waiting for fix batch d769a1ac
+2025-12-28 16:06:23,759 - ERROR -   FAILED: Fix processing timed out or failed
+2025-12-28 16:06:23,759 - INFO - 
+============================================================
+2025-12-28 16:06:23,759 - INFO - TEST 5: Grammar: Inconsistent verb tense
+2025-12-28 16:06:23,759 - INFO - ============================================================
+2025-12-28 16:06:23,759 - INFO -   Found issue: Grammar issue: Inconsistent verb tense
+2025-12-28 16:06:23,759 - INFO -   URL: https://demo-agent-savas-labs.pantheonsite.io/blog/browsers-other-chrome
+2025-12-28 16:06:23,759 - INFO -   Element: Original: "Brave was created by Brendan Eich (the original creator of JavaScript) after leaving Mozi...
+2025-12-28 16:06:23,759 - INFO -   Issue ID: 90ad8dc98216
+2025-12-28 16:06:23,760 - INFO -   Submitting fix request...
+2025-12-28 16:06:23,769 - INFO -   Fix submitted: batch_id=7a3523fb
+2025-12-28 16:06:23,769 - INFO -   Initial response: Created 1 fix record(s). Processing in background.
+2025-12-28 16:06:31,226 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:33,236 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:35,247 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:37,257 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:39,264 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:41,275 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:43,286 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:45,298 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:47,309 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:49,315 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:51,325 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:53,336 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:55,348 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:57,357 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:06:59,368 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:01,374 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:03,385 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:05,395 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:07,404 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:09,415 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:11,423 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:13,433 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:15,440 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:17,448 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:19,460 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:21,471 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:23,481 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:25,492 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:27,503 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:29,514 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:31,524 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:33,534 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:35,545 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:37,556 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:39,567 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:41,579 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:43,589 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:45,599 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:47,611 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:49,623 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:51,634 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:53,645 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:55,654 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:57,664 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:07:59,679 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:01,690 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:03,701 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:05,712 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:07,723 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:09,734 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:11,745 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:13,755 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:15,765 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:17,773 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:19,782 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:21,791 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:23,799 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:25,807 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:27,817 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:29,824 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:31,830 - ERROR -   Timeout waiting for fix batch 7a3523fb
+2025-12-28 16:08:31,830 - ERROR -   FAILED: Fix processing timed out or failed
+2025-12-28 16:08:31,830 - INFO - 
+============================================================
+2025-12-28 16:08:31,830 - INFO - TEST 6: Broken link: NYTimes 403
+2025-12-28 16:08:31,830 - INFO - ============================================================
+2025-12-28 16:08:31,830 - INFO -   Found issue: Forbidden link (403): https://www.nytimes.com/2022/11/14/technology/goog
+2025-12-28 16:08:31,830 - INFO -   URL: https://demo-agent-savas-labs.pantheonsite.io/blog/browsers-other-chrome
+2025-12-28 16:08:31,830 - INFO -   Element: <a href="https://www.nytimes.com/2022/11/14/technology/google-privacy-settlement.html">$392M settlem...
+2025-12-28 16:08:31,830 - INFO -   Issue ID: c01561efc9f1
+2025-12-28 16:08:31,831 - INFO -   Submitting fix request...
+2025-12-28 16:08:31,842 - INFO -   Fix submitted: batch_id=4911b1c2
+2025-12-28 16:08:31,842 - INFO -   Initial response: Created 1 fix record(s). Processing in background.
+2025-12-28 16:08:32,338 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:34,349 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:36,359 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:38,370 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:40,381 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:42,391 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:44,400 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:46,407 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:48,414 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:50,426 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:52,435 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:54,446 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:56,453 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:08:58,463 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:00,473 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:02,483 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:04,494 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:06,503 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:08,512 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:10,524 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:12,535 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:14,546 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:16,555 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:18,565 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:20,575 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:22,584 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:24,594 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:26,602 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:28,614 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:30,623 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress
+2025-12-28 16:09:32,631 - INFO -   Batch status: 0/1 complete, 0 failed, 1 in progress

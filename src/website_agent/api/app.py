@@ -738,6 +738,22 @@ async def create_fixes(
         if rec_match:
             proposed_value = rec_match.group(1).strip()
 
+        # Parse element field for spelling/grammar issues
+        if issue_item.element:
+            # Spelling format: "word" → "correction"
+            spelling_match = re.search(r'"([^"]+)"\s*→\s*"([^"]+)"', issue_item.element)
+            if spelling_match:
+                original_value = original_value or spelling_match.group(1)
+                proposed_value = proposed_value or spelling_match.group(2)
+
+            # Grammar format: Original: "text" ... Suggested: "text"
+            grammar_orig_match = re.search(r'Original:\s*"([^"]+)"', issue_item.element)
+            grammar_sugg_match = re.search(r'Suggested:\s*"([^"]+)"', issue_item.element)
+            if grammar_orig_match:
+                original_value = original_value or grammar_orig_match.group(1)
+            if grammar_sugg_match:
+                proposed_value = proposed_value or grammar_sugg_match.group(1)
+
         # Fallback: try broken link format in element: <a href="url">text</a>
         if not original_value and issue_item.element:
             link_match = re.search(r'(<a\s+href=["\'][^"\']+["\'][^>]*>[^<]+</a>)', issue_item.element, re.IGNORECASE)
