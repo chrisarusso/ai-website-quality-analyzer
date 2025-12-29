@@ -372,22 +372,26 @@ class CodeFixGenerator:
 ## CRITICAL RULES
 1. Find "{original_value}" in the excerpt above
 2. Replace ONLY that exact text with "{proposed_value}"
-3. Return the COMPLETE line(s) that changed - the ENTIRE line from start to end
-4. PRESERVE all leading whitespace, indentation, HTML tags, and other content
-5. ONLY change the specific text mentioned - nothing else on the line
+3. Return the EXACT file line(s) that need changing (each line as shown with its line number above)
+4. PRESERVE the exact line breaks - do NOT combine multiple lines into one
+5. PRESERVE all leading whitespace, indentation, HTML tags, and other content on that line
+6. ONLY change the specific text mentioned - nothing else
 
-IMPORTANT: Each line value must be the COMPLETE line content, not just the changed portion.
+IMPORTANT:
+- A "line" is ONE row from the file (as shown with line numbers above)
+- Do NOT merge content from multiple lines - each line entry should be ONE file line
+- If the text to fix is on line 259, return line 259 exactly as it should be (not content from lines 260-261)
 
 Return JSON:
 {{
     "fixed_lines": {{
-        "259": "          <p>The complete line 259 with all original indentation and content, just with the fix applied</p>"
+        "259": "          <p>From launch to ongoing support, we ensure your application runs smoothly,"
     }},
-    "explanation": "Changed {original_value} to {proposed_value}",
+    "explanation": "Changed run to runs on line 259",
     "confidence": 0.9
 }}
 
-Return ONLY valid JSON with the line numbers and their COMPLETE line content."""
+Return ONLY valid JSON with the line numbers and their exact single-line content."""
         else:
             prompt = f"""You are a code fixer. Fix the specified text in this file.
 

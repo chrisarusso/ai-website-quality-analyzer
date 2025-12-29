@@ -595,15 +595,81 @@ class TestFullSixFixes:
             completed = sum(1 for f in fixes if f.get("status") in terminal_states)
 
             if completed == len(fixes):
-                # Verify results
-                succeeded = sum(1 for f in fixes
-                               if f.get("status") in ["draft_created", "pr_created", "applied"])
+                # Print detailed results
+                print("\n" + "=" * 70)
+                print("FIX RESULTS")
+                print("=" * 70)
 
-                # Check batching worked (should have 2 Drupal revisions for 4 content fixes)
+                succeeded = 0
                 revision_urls = set()
+                pr_urls = []
+
                 for fix in fixes:
+                    status_str = fix.get("status")
+                    title = fix.get("title", "Unknown")[:50]
+                    is_success = status_str in ["draft_created", "pr_created", "applied"]
+
+                    icon = "✅" if is_success else "❌"
+                    print(f"\n{icon} {title}")
+                    print(f"   Status: {status_str}")
+
+                    if is_success:
+                        succeeded += 1
+
                     if fix.get("drupal_revision_url"):
-                        revision_urls.add(fix["drupal_revision_url"])
+                        rev_url = fix["drupal_revision_url"]
+                        print(f"   Drupal: {rev_url}")
+                        revision_urls.add(rev_url)
+
+                    if fix.get("github_pr_url"):
+                        pr_url = fix["github_pr_url"]
+                        print(f"   PR: {pr_url}")
+                        pr_urls.append(pr_url)
+
+                    if fix.get("error_message"):
+                        print(f"   Error: {fix['error_message'][:60]}")
+
+                print("\n" + "=" * 70)
+                print("SUMMARY")
+                print("=" * 70)
+                print(f"Fixes succeeded: {succeeded}/6")
+                print(f"Drupal revisions created: {len(revision_urls)}")
+                print(f"GitHub PRs created: {len(pr_urls)}")
+
+                # Print verification links
+                print("\n" + "=" * 70)
+                print("VERIFICATION LINKS")
+                print("=" * 70)
+
+                if revision_urls:
+                    print("\nDrupal revision URLs:")
+                    for url in revision_urls:
+                        print(f"  - {url}")
+
+                if pr_urls:
+                    print("\nGitHub PR URLs:")
+                    for url in pr_urls:
+                        print(f"  - {url}")
+
+                # Generate drush uli link for Drupal verification
+                print("\n" + "=" * 70)
+                print("DRUPAL LOGIN LINK")
+                print("=" * 70)
+                import subprocess
+                try:
+                    result = subprocess.run(
+                        ["terminus", "drush", "savas-labs.demo-agent", "--", "uli"],
+                        capture_output=True, text=True, timeout=30
+                    )
+                    if result.returncode == 0:
+                        uli_link = result.stdout.strip()
+                        print(f"\n{uli_link}")
+                    else:
+                        print(f"\nFailed to generate uli: {result.stderr}")
+                except Exception as e:
+                    print(f"\nCould not generate uli: {e}")
+
+                print("\n" + "=" * 70)
 
                 assert succeeded == 6, f"Expected 6 successes, got {succeeded}"
                 # With batching, 4 content fixes should create ≤2 revisions
